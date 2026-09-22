@@ -4,15 +4,17 @@
 
 ## امکانات
 
-- خواندن زیرنویس زنده‌ی خود Google Meet (فارسی/انگلیسی/...) و ذخیره با گوینده + تایم‌استمف
+- شروع/پایان ضبط با یک دکمه‌ی شناور روی صفحه Meet (کاملاً دستی، نه خودکار)
+- خواندن زیرنویس زنده‌ی خود Google Meet (فارسی/انگلیسی/...) با گوینده + تایم‌استم، و تشخیص صحیح ادامه‌ی جمله (بدون تکرار خطوط رشد‌کننده)
 - ذخیره کامل تاریخچه جلسات در IndexedDB (بدون محدودیت حجمی chrome.storage)
-- خلاصه، تصمیمات، اقدامات، سوالات باز و ریسک‌ها — به‌صورت ساختاریافته
-- ۱۲ قالب پرامٕت آماده (فنی، Code Review، معماری، Postmortem، Sprint Planning، رتروسٕکتیو، بیزینسی، فروش، مصاحبه، هیأت‌مدیره، آموزشی، خلاصه سریع) + امکان افزودن قالب اختصاصی
-- چند Provider هوش مصنوعی هم‌زمان: Gemini مستقیم، Gemini از طریق Cloudflare AI Gateway (برای دورزدن فیلترینگ شبکه شرکتی)، هر سرور هم‌سازگار با OpenAI (از جمله Ollama خودمیزبان)
-- **حالت بدون کلید (کپی دستی):** اگر کلید API ندارید، افزونه یک متن آماده (پرامپت + متن جلسه) می‌سازد که در هر چت هوش مصنوعی (ChatGPT، Gemini، Claude، ...) پیست می‌کنید؛ پاسخ JSON را کپی و در افزونه وارد می‌کنید تا بدون هیچ فراخوانی شبکه‌ای، گزارش ساخته و مرتب شود
-- خروجی PDF، Word (.doc)، TXT و Markdown — همه کاملاً آفلاین و بدون کتابخانه خارجی
-- همگام‌سازی اختیاری با GitHub (هر جلسه در یک پوشه با report.md، transcript.txt، meeting.json)
-- ظاهر مدرن با فونت Vazirmatn و راست‌به‌چپ کامل
+- خلاصه، تصمیمات، اقدامات، سوالات باز، ریسک‌ها — به‌صورت ساختاریافته
+- **درصد مشارکت هر فرد** در جلسه (بر اساس حجم متن گفته‌شده)
+- ۱۲ قالب پرامپت آماده + امکان افزودن قالب اختصاصی
+- چند Provider هوش مصنوعی هم‌زمان: Gemini مستقیم، Gemini از طریق Cloudflare AI Gateway، هر سرور هم‌سازگار با OpenAI (از جمله Ollama خودمیزبان)
+- **حالت بدون کلید (کپی دستی):** بدون کلید API، متن آماده برای هر چت هوش مصنوعی می‌سازد و پاسخ JSON را در همان افزونه پردازش می‌کند
+- خروجی PDF، Word (.doc)، TXT و Markdown — کاملاً آفلاین
+- همگام‌سازی اختیاری با GitHub
+- ظاهر مدرن با فونت Vazirmatn، راست‌به‌چپ کامل، و اسکرول‌بار سفارشی
 
 ## نصب (Load Unpacked)
 
@@ -20,18 +22,11 @@
 2. Chrome یا Edge را باز کنید و به `chrome://extensions` یا `edge://extensions` بروید
 3. «Developer mode» را فعال کنید
 4. روی «Load unpacked» بزنید و پوشه‌ی ریشه‌ی پروژه را انتخاب کنید
-5. از طریق آیکون افزونه وارد تنظیمات شوید و در صورت دلخواه چند Provider تعریف کنید (یا همان Provider پیش‌فرض «بدون کلید» را نگه دارید)
-
-## مسیرهای راه‌اندازی Provider
-
-- **بدون هیچ کلید:** کاری لازم نیست؛ حالت پیش‌فرض فعال است.
-- **Gemini مستقیم:** یک Provider از نوع Gemini بسازید و کلید Google AI Studio را وارد کنید.
-- **Gemini از پشت فیلترینگ شرکتی:** یک Provider از نوع «Cloudflare AI Gateway» بسازید؛ باید در Cloudflare یک AI Gateway با provider `google-ai-studio` و BYOK کلید Gemini ساخته باشید.
-- **مدل خودمیزبان:** یک Provider از نوع OpenAI-compatible با Base URL سرور Ollama/LM Studio خودتان بسازید.
+5. از آیکون افزونه، تنظیمات را باز کنید و حداقل یک Provider تعریف کنید (یا همان «بدون کلید» پیش‌فرض را نگه دارید)
 
 ## نکته مهم درباره زبان
 
-باید داخل خود Google Meet، زیرنویس زنده (Captions) را روی فارسی تنظیم کنید (⚙️ Settings > Captions). افزونه فقط همان زیرنویسی که گوگل تولید می‌کند را می‌خواند و ذخیره می‌کند.
+باید داخل خود Google Meet، زیرنویس زنده (Captions) را روی فارسی تنظیم کنید (⚙️ Settings > Captions). افزونه صرفاً همان زیرنویسی که گوگل تولید می‌کند را می‌خواند.
 
 ## معماری کد
 
@@ -39,15 +34,26 @@
 src/
   ai/            Strategy زبانی: providers.js + prompt-templates.js
   background/    service-worker.js (Router) + summarizer.js (Template Method) + settings-store.js + github-sync.js
-  content/       meet-capture.js — خواندن caption از DOM صفحه Meet
-  db/            models.js + database.js (Repository روی IndexedDB)
+  content/       meet-capture.js — خواندن caption از DOM صفحه Meet + دکمه شروع/پایان
+  db/            models.js (شامل speakerParticipation) + database.js (Repository روی IndexedDB)
   export/        exporters.js (Strategy) + markdown-builder.js (Builder)
   ui/            sidepanel + options (رابط کاربری)
 ```
 
-## تفییرات این نسخه (0.2.0)
+## تاریخچه تطبیقات
 
-- رفع خطای `Default locale was specified, but _locales subtree is missing` با افزودن `_locales/en` و `_locales/fa` و استفاده از `__MSG_extName__`/`__MSG_extDescription__` در manifest.json
-- افزودن آیکون‌های واقعی افزونه (16/48/128px)
-- افزودن حالت کامل «بدون کلید (کپی دستی)» در Provider ها، summarizer و رابط کاربری Side Panel
-- افزودن دسترسی `clipboardWrite` و `downloads` مورد نیاز صادرات و کپی خودکار
+**0.3.0**
+- درصد مشارکت افراد در گزارش و همه‌ی خروجی‌ها
+- رفع نمایش «about:blank» در خروجی PDF (Blob URL + عنوان و فوتر mhkarami97.ir)
+- بخش «درباره» در تنظیمات (سایت، گیت‌هاب، نسخه)
+- رفع باگ: پاسخ‌های background به‌صورت شیء ساده برمی‌گشتند و getterهای `plainTranscript`/`durationMs` را از دست می‌دادند → خروجی خالی/undefined و مدت جلسه‌ی همیشه صفر
+- رفع باگ تشخیص گوینده (همیشه «You» نشان می‌داد) با محدودکردن جست‌وجو به بلاک DOM همان خط
+- رفع تکرار خطوط زیرنویس رشد‌کننده (هر خط فقط یک بار، به‌صورت به‌روزرسانی نه رکورد جدید)
+
+**0.2.0**
+- دکمه‌ی دستی شروع/پایان ضبط (به‌جای همیشه‌روشن)
+- رفع باگ گرفتن متن «Jump to bottom» به‌جای زیرنویس واقعی
+- اسکرول‌بار و استایل `<select>` سفارشی، تب پیش‌فرض «متن کامل»، ترتیب دکمه‌های خروجی
+- رفع خطای `Default locale was specified, but _locales subtree is missing`
+- افزودن آیکون‌های افزونه
+- افزودن حالت کامل «بدون کلید (کپی دستی)»
