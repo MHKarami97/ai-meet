@@ -7,16 +7,25 @@
  */
 
 const JSON_SCHEMA_INSTRUCTION = `
-فقط و فقط یک JSON معتبر با دقیقاً این کلیدها برگردان (بدون Markdown، بدون توضیح اضافه، بدون بک‌تیک):
+فقط و فقط یک JSON معتبر با دقیقاً این کلیدها برگردان (بدون Markdown، بدون توضیح اضافه، بدون بک‌تیک). اگر بخشی در جلسه مطرح نشده، آرایه‌ی خالی یا مقدار null بگذار ولی هیچ فیلدی را حذف نکن:
 {
   "executiveSummary": "خلاصه اجرایی جلسه در ۳ تا ۶ جمله فارسی روان",
-  "sections": [{"title": "عنوان بخش موضوعی", "content": "شرح آن بخش از جلسه"}],
-  "keyDecisions": ["تصمیم قطعی گرفته‌شده ۱", "تصمیم قطعی گرفته‌شده ۲"],
+  "sections": [{"title": "عنوان بخش موضوعی", "content": "شرح آن بخش", "type": "presentation یا discussion یا task-assignment یا status-report", "tone": "formal یا informal یا critical"}],
+  "keyDecisions": ["تصمیم قطعی گرفته‌شده ۱"],
   "actionItems": [{"description": "اقدام مورد نیاز", "owner": "نام مسئول یا null", "dueDate": "تاریخ یا null"}],
   "openQuestions": ["سوال یا موضوع حل‌نشده ۱"],
-  "risks": ["ریسک، نگرانی یا نکته مهمی که باید دنبال شود"]
-}
-اگر بخشی در جلسه مطرح نشده بود، آرایه‌ی متناظر را خالی بگذار. هیچ فیلدی را حذف نکن.`;
+  "risks": ["ریسک یا نکته مهمی که باید دنبال شود"],
+  "keyTopics": [{"topic": "مفهوم یا موضوع پرتکرار", "count": "تخمین تعداد اشاره به آن به‌صورت عدد"}],
+  "sentimentBySpeaker": [{"speaker": "نام گوینده", "sentiment": "مثبت یا منفی یا خنثی", "note": "توضیح کوتاه چرا"}],
+  "tensionMoments": [{"context": "در چه بخشی از جلسه (مثلاً هنگام بحث بودجه)", "description": "چرا بحث تنش‌دار یا حساس شد"}],
+  "namedEntities": {"people": ["اسم افراد ذکرشده"], "organizations": ["شرکت‌ها/تیم‌ها"], "projects": ["نام پروژه‌ها"], "dates": ["تاریخ‌های مطرح‌شده"], "locations": ["مکان‌های مطرح‌شده"]},
+  "glossary": [{"term": "اصطلاح فنی یا تخصصی استفاده‌شده", "definition": "توضیح کوتاه آن اصطلاح بر اساس متن جلسه"}],
+  "conversationPatterns": {"mostQuestionsBy": "نام کسی که بیشترین سوال پرسید یا null", "mostDecisionsBy": "نام کسی که بیشترین تصمیم گرفت یا null", "notes": "توضیح کوتاه الگوی مکالمه"},
+  "agreements": ["نقطه‌ای که همه یا اکثر شرکت‌کنندگان روی آن توافق دارند"],
+  "disagreements": ["نقطه‌ای که اختلاف‌نظر وجود دارد"],
+  "suggestedAgenda": ["آیتم پیشنهادی برای دستور جلسه بعدی، بر اساس سوالات باز و اکشن‌آیتم‌های ناتمام"],
+  "effectivenessScore": {"score": "عدد صحیح ۰ تا ۱۰۰ برای اثربخشی کلی جلسه", "decisionSpeed": "عدد ۰ تا ۱۰۰", "actionClarity": "عدد ۰ تا ۱۰۰", "timeEfficiency": "عدد ۰ تا ۱۰۰", "participationBalance": "عدد ۰ تا ۱۰۰", "summary": "یک جمله توضیح امتیاز"}
+}`;
 
 export const PROMPT_TEMPLATES = [
   {
@@ -89,7 +98,7 @@ export const PROMPT_TEMPLATES = [
     id: 'quick-summary',
     name: 'خلاصه سریع (بدون جزئیات)',
     description: 'برای جلسات کوتاه که فقط یک خلاصه فشرده لازم دارید.',
-    systemInstruction: `فقط یک خلاصه بسیار فشرده از این جلسه بده. executiveSummary باید در ۳ تا ۵ جمله کل جلسه را پوشش دهد. sections و risks را خالی بگذار مگر نکته‌ی واقعاً مهمی وجود داشته باشد.${JSON_SCHEMA_INSTRUCTION}`
+    systemInstruction: `فقط یک خلاصه بسیار فشرده از این جلسه بده. executiveSummary باید در ۳ تا ۵ جمله کل جلسه را پوشش دهد. سایر فیلدهای آرایه‌ای/شیء را در صورت نبود اطلاعات کافی خالی بگذار.${JSON_SCHEMA_INSTRUCTION}`
   }
 ];
 

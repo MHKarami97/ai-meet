@@ -14,7 +14,73 @@ function participationListHtml(meeting) {
     .join('');
 }
 
-/** Strategy Pattern: every exporter turns a Meeting into a downloadable Blob. */
+function extendedAnalysisHtml(meeting) {
+  const r = meeting.report;
+  if (!r) return '';
+  const parts = [];
+
+  const e = r.effectivenessScore;
+  if (e?.score !== null && e?.score !== undefined) {
+    parts.push(`<h2>امتیاز اثربخشی جلسه: ${escapeHtml(String(e.score))}/100</h2>
+      <p>${escapeHtml(e.summary || '')}</p>
+      <ul>
+        <li>سرعت تصمیم‌گیری: ${escapeHtml(String(e.decisionSpeed ?? '-'))}</li>
+        <li>وضوح اکشن‌آیتم‌ها: ${escapeHtml(String(e.actionClarity ?? '-'))}</li>
+        <li>بهره‌وری زمانی: ${escapeHtml(String(e.timeEfficiency ?? '-'))}</li>
+        <li>توازن مشارکت: ${escapeHtml(String(e.participationBalance ?? '-'))}</li>
+      </ul>`);
+  }
+
+  if (r.keyTopics?.length) {
+    parts.push(`<h2>موضوعات کلیدی</h2><ul>${r.keyTopics.map((t) => `<li>${escapeHtml(t.topic)}${t.count ? ` (${escapeHtml(String(t.count))} بار)` : ''}</li>`).join('')}</ul>`);
+  }
+
+  if (r.sentimentBySpeaker?.length) {
+    parts.push(`<h2>تحلیل احساسات به‌تفکیک گوینده</h2><ul>${r.sentimentBySpeaker.map((s) => `<li>${escapeHtml(s.speaker)}: ${escapeHtml(s.sentiment)}${s.note ? ` — ${escapeHtml(s.note)}` : ''}</li>`).join('')}</ul>`);
+  }
+
+  if (r.tensionMoments?.length) {
+    parts.push(`<h2>نقاط تنش‌دار جلسه</h2><ul>${r.tensionMoments.map((t) => `<li>${escapeHtml(t.context)}: ${escapeHtml(t.description)}</li>`).join('')}</ul>`);
+  }
+
+  const ne = r.namedEntities;
+  if (ne && (ne.people?.length || ne.organizations?.length || ne.projects?.length || ne.dates?.length || ne.locations?.length)) {
+    parts.push(`<h2>نهادهای نام‌دار (NER)</h2><ul>
+      ${ne.people?.length ? `<li>افراد: ${escapeHtml(ne.people.join('، '))}</li>` : ''}
+      ${ne.organizations?.length ? `<li>شرکت‌ها/تیم‌ها: ${escapeHtml(ne.organizations.join('، '))}</li>` : ''}
+      ${ne.projects?.length ? `<li>پروژه‌ها: ${escapeHtml(ne.projects.join('، '))}</li>` : ''}
+      ${ne.dates?.length ? `<li>تاریخ‌ها: ${escapeHtml(ne.dates.join('، '))}</li>` : ''}
+      ${ne.locations?.length ? `<li>مکان‌ها: ${escapeHtml(ne.locations.join('، '))}</li>` : ''}
+    </ul>`);
+  }
+
+  if (r.glossary?.length) {
+    parts.push(`<h2>واژه‌نامه اصطلاحات تخصصی</h2><ul>${r.glossary.map((g) => `<li><b>${escapeHtml(g.term)}</b>: ${escapeHtml(g.definition)}</li>`).join('')}</ul>`);
+  }
+
+  const cp = r.conversationPatterns;
+  if (cp?.mostQuestionsBy || cp?.mostDecisionsBy) {
+    parts.push(`<h2>الگوی مکالمه</h2><ul>
+      ${cp.mostQuestionsBy ? `<li>بیشترین سوال‌پرسنده: ${escapeHtml(cp.mostQuestionsBy)}</li>` : ''}
+      ${cp.mostDecisionsBy ? `<li>بیشترین تصمیم‌گیرنده: ${escapeHtml(cp.mostDecisionsBy)}</li>` : ''}
+      ${cp.notes ? `<li>${escapeHtml(cp.notes)}</li>` : ''}
+    </ul>`);
+  }
+
+  if (r.agreements?.length || r.disagreements?.length) {
+    parts.push(`<h2>نقاط توافق و اختلاف‌نظر</h2><ul>
+      ${(r.agreements || []).map((a) => `<li>✅ ${escapeHtml(a)}</li>`).join('')}
+      ${(r.disagreements || []).map((d) => `<li>⚠️ ${escapeHtml(d)}</li>`).join('')}
+    </ul>`);
+  }
+
+  if (r.suggestedAgenda?.length) {
+    parts.push(`<h2>پیشنهاد دستور جلسه بعدی</h2><ul>${r.suggestedAgenda.map((a) => `<li>${escapeHtml(a)}</li>`).join('')}</ul>`);
+  }
+
+  return parts.join('\n');
+}
+
 export class BaseExporter {
   // eslint-disable-next-line no-unused-vars
   export(meeting) {
@@ -49,11 +115,6 @@ export class MarkdownExporter extends BaseExporter {
   }
 }
 
-/**
- * Produces a Word-openable file using the "HTML + MS Office XML namespaces"
- * trick (saved with a .doc extension). Avoids bundling a real OOXML/zip
- * writer while still opening cleanly in Microsoft Word / LibreOffice.
- */
 export class WordExporter extends BaseExporter {
   export(meeting) {
     const html = this.buildHtml(meeting);
@@ -78,6 +139,7 @@ export class WordExporter extends BaseExporter {
 <body dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif">
 <h1>${escapeHtml(meeting.title)}</h1>
 <h2>درصد مشارکت افراد</h2><ul>${participationListHtml(meeting)}</ul>
+${extendedAnalysisHtml(meeting)}
 <h2>خلاصه اجرایی</h2><p>${escapeHtml(r?.executiveSummary || '-')}</p>
 <h2>تصمیمات</h2><ul>${decisions}</ul>
 <h2>اقدامات</h2><ul>${actions}</ul>
@@ -89,15 +151,6 @@ export class WordExporter extends BaseExporter {
   }
 }
 
-/**
- * Uses the browser's native "Save as PDF" print pipeline — zero dependencies,
- * fully offline. The document is served from a Blob URL (instead of an empty
- * "about:blank" window) and given a real <title>, so the print header/footer
- * shows the site name instead of "about:blank". Note: fully removing the
- * browser's own printed header/footer (with page URL) is a setting in the
- * print dialog itself ("More settings" > uncheck "Headers and footers") —
- * a web page cannot override that from JavaScript/CSS.
- */
 export class PdfExporter extends BaseExporter {
   export(meeting) {
     const html = this.buildPrintableHtml(meeting);
@@ -132,6 +185,7 @@ h1{color:#4c1d95}h2{color:#2563eb;border-bottom:1px solid #eee;padding-bottom:4p
 <body>
 <h1>${escapeHtml(meeting.title)}</h1>
 <h2>درصد مشارکت افراد</h2><ul>${participationListHtml(meeting)}</ul>
+${extendedAnalysisHtml(meeting)}
 <h2>خلاصه اجرایی</h2><p>${escapeHtml(r?.executiveSummary || '-')}</p>
 <h2>تصمیمات</h2><ul>${decisions}</ul>
 <h2>اقدامات</h2><ul>${actions}</ul>

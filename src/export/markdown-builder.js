@@ -26,13 +26,26 @@ export class MeetingReportMarkdownBuilder {
 
     if (meeting.report) {
       const r = meeting.report;
+
+      if (r.effectivenessScore?.score !== null && r.effectivenessScore?.score !== undefined) {
+        const e = r.effectivenessScore;
+        parts.push(`## امتیاز اثربخشی جلسه: ${e.score}/100`);
+        parts.push(e.summary || '');
+        parts.push(`- سرعت تصمیم‌گیری: ${e.decisionSpeed ?? '-'}`);
+        parts.push(`- وضوح اکشن‌آیتم‌ها: ${e.actionClarity ?? '-'}`);
+        parts.push(`- بهره‌وری زمانی: ${e.timeEfficiency ?? '-'}`);
+        parts.push(`- توازن مشارکت: ${e.participationBalance ?? '-'}`);
+        parts.push('');
+      }
+
       parts.push('## خلاصه اجرایی');
       parts.push(r.executiveSummary || '-');
       parts.push('');
 
       if (r.sections?.length) {
         for (const section of r.sections) {
-          parts.push(`### ${section.title}`);
+          const tags = [section.type, section.tone].filter(Boolean).join(' / ');
+          parts.push(`### ${section.title}${tags ? ` (${tags})` : ''}`);
           parts.push(section.content);
           parts.push('');
         }
@@ -53,6 +66,62 @@ export class MeetingReportMarkdownBuilder {
       parts.push('## ریسک‌ها و نکات مهم');
       (r.risks || []).forEach((rk) => parts.push(`- ${rk}`));
       parts.push('');
+
+      if (r.keyTopics?.length) {
+        parts.push('## موضوعات کلیدی');
+        r.keyTopics.forEach((t) => parts.push(`- ${t.topic}${t.count ? ` (${t.count} بار)` : ''}`));
+        parts.push('');
+      }
+
+      if (r.sentimentBySpeaker?.length) {
+        parts.push('## تحلیل احساسات به‌تفکیک گوینده');
+        r.sentimentBySpeaker.forEach((s) => parts.push(`- ${s.speaker}: ${s.sentiment}${s.note ? ` — ${s.note}` : ''}`));
+        parts.push('');
+      }
+
+      if (r.tensionMoments?.length) {
+        parts.push('## نقاط تنش‌دار جلسه');
+        r.tensionMoments.forEach((t) => parts.push(`- ${t.context}: ${t.description}`));
+        parts.push('');
+      }
+
+      const ne = r.namedEntities;
+      if (ne && (ne.people?.length || ne.organizations?.length || ne.projects?.length || ne.dates?.length || ne.locations?.length)) {
+        parts.push('## نهادهای نام‌دار (NER)');
+        if (ne.people?.length) parts.push(`- افراد: ${ne.people.join('، ')}`);
+        if (ne.organizations?.length) parts.push(`- شرکت‌ها/تیم‌ها: ${ne.organizations.join('، ')}`);
+        if (ne.projects?.length) parts.push(`- پروژه‌ها: ${ne.projects.join('، ')}`);
+        if (ne.dates?.length) parts.push(`- تاریخ‌ها: ${ne.dates.join('، ')}`);
+        if (ne.locations?.length) parts.push(`- مکان‌ها: ${ne.locations.join('، ')}`);
+        parts.push('');
+      }
+
+      if (r.glossary?.length) {
+        parts.push('## واژه‌نامه اصطلاحات تخصصی');
+        r.glossary.forEach((g) => parts.push(`- **${g.term}**: ${g.definition}`));
+        parts.push('');
+      }
+
+      if (r.conversationPatterns && (r.conversationPatterns.mostQuestionsBy || r.conversationPatterns.mostDecisionsBy)) {
+        parts.push('## الگوی مکالمه');
+        if (r.conversationPatterns.mostQuestionsBy) parts.push(`- بیشترین سوال‌پرسنده: ${r.conversationPatterns.mostQuestionsBy}`);
+        if (r.conversationPatterns.mostDecisionsBy) parts.push(`- بیشترین تصمیم‌گیرنده: ${r.conversationPatterns.mostDecisionsBy}`);
+        if (r.conversationPatterns.notes) parts.push(`- ${r.conversationPatterns.notes}`);
+        parts.push('');
+      }
+
+      if (r.agreements?.length || r.disagreements?.length) {
+        parts.push('## نقاط توافق و اختلاف‌نظر');
+        (r.agreements || []).forEach((a) => parts.push(`- ✅ توافق: ${a}`));
+        (r.disagreements || []).forEach((d) => parts.push(`- ⚠️ اختلاف‌نظر: ${d}`));
+        parts.push('');
+      }
+
+      if (r.suggestedAgenda?.length) {
+        parts.push('## پیشنهاد دستور جلسه بعدی');
+        r.suggestedAgenda.forEach((item) => parts.push(`- ${item}`));
+        parts.push('');
+      }
     }
 
     parts.push('## متن کامل جلسه');

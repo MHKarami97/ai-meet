@@ -3,6 +3,7 @@
  * A single "settings" object is stored so reads/writes stay atomic and simple.
  */
 const DEFAULTS = {
+  theme: 'dark',
   providers: [
     { id: 'manual-default', type: 'manual', name: 'بدون کلید (کپی دستی)', apiKey: '', baseUrl: '', model: '' }
   ],
@@ -37,6 +38,17 @@ export class SettingsStore {
   async getActiveProvider() {
     const settings = await this.getAll();
     return settings.providers.find((p) => p.id === settings.activeProviderId) || settings.providers[0] || null;
+  }
+
+  /** Registers a live callback that fires whenever the theme changes in storage (e.g. from the options page). */
+  onThemeChange(callback) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.settings) {
+        const newTheme = changes.settings.newValue?.theme;
+        const oldTheme = changes.settings.oldValue?.theme;
+        if (newTheme && newTheme !== oldTheme) callback(newTheme);
+      }
+    });
   }
 }
 

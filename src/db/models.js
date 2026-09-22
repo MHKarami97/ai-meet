@@ -33,10 +33,78 @@ export class ActionItem {
   }
 }
 
+/** `type`: presentation | discussion | task-assignment | status-report. `tone`: formal | informal | critical. */
 export class MeetingSection {
-  constructor({ title, content } = {}) {
+  constructor({ title, content, type = null, tone = null } = {}) {
     this.title = title;
     this.content = content;
+    this.type = type;
+    this.tone = tone;
+  }
+}
+
+export class SentimentEntry {
+  constructor({ speaker, sentiment = 'خنثی', note = '' } = {}) {
+    this.speaker = speaker;
+    this.sentiment = sentiment;
+    this.note = note;
+  }
+}
+
+export class TensionMoment {
+  constructor({ context = '', description = '' } = {}) {
+    this.context = context;
+    this.description = description;
+  }
+}
+
+export class GlossaryTerm {
+  constructor({ term, definition } = {}) {
+    this.term = term;
+    this.definition = definition;
+  }
+}
+
+export class KeyTopic {
+  constructor({ topic, count = 1 } = {}) {
+    this.topic = topic;
+    this.count = count;
+  }
+}
+
+export class NamedEntities {
+  constructor({ people = [], organizations = [], projects = [], dates = [], locations = [] } = {}) {
+    this.people = people;
+    this.organizations = organizations;
+    this.projects = projects;
+    this.dates = dates;
+    this.locations = locations;
+  }
+}
+
+export class ConversationPatterns {
+  constructor({ mostQuestionsBy = null, mostDecisionsBy = null, notes = '' } = {}) {
+    this.mostQuestionsBy = mostQuestionsBy;
+    this.mostDecisionsBy = mostDecisionsBy;
+    this.notes = notes;
+  }
+}
+
+export class EffectivenessScore {
+  constructor({
+    score = null,
+    decisionSpeed = null,
+    actionClarity = null,
+    timeEfficiency = null,
+    participationBalance = null,
+    summary = ''
+  } = {}) {
+    this.score = score;
+    this.decisionSpeed = decisionSpeed;
+    this.actionClarity = actionClarity;
+    this.timeEfficiency = timeEfficiency;
+    this.participationBalance = participationBalance;
+    this.summary = summary;
   }
 }
 
@@ -48,6 +116,16 @@ export class MeetingReport {
     actionItems = [],
     openQuestions = [],
     risks = [],
+    keyTopics = [],
+    sentimentBySpeaker = [],
+    tensionMoments = [],
+    namedEntities = {},
+    glossary = [],
+    conversationPatterns = {},
+    agreements = [],
+    disagreements = [],
+    suggestedAgenda = [],
+    effectivenessScore = {},
     templateId = 'general-technical',
     providerId = null
   } = {}) {
@@ -57,6 +135,16 @@ export class MeetingReport {
     this.actionItems = actionItems.map((a) => new ActionItem(a));
     this.openQuestions = openQuestions;
     this.risks = risks;
+    this.keyTopics = keyTopics.map((t) => (typeof t === 'string' ? new KeyTopic({ topic: t }) : new KeyTopic(t)));
+    this.sentimentBySpeaker = sentimentBySpeaker.map((s) => new SentimentEntry(s));
+    this.tensionMoments = tensionMoments.map((t) => new TensionMoment(t));
+    this.namedEntities = new NamedEntities(namedEntities);
+    this.glossary = glossary.map((g) => new GlossaryTerm(g));
+    this.conversationPatterns = new ConversationPatterns(conversationPatterns);
+    this.agreements = agreements;
+    this.disagreements = disagreements;
+    this.suggestedAgenda = suggestedAgenda;
+    this.effectivenessScore = new EffectivenessScore(effectivenessScore);
     this.templateId = templateId;
     this.providerId = providerId;
     this.generatedAt = new Date().toISOString();
@@ -109,13 +197,6 @@ export class Meeting {
     return new Date(this.endedAt).getTime() - new Date(this.startedAt).getTime();
   }
 
-  /**
-   * Estimates each speaker's share of the conversation using the character
-   * count of their finalized caption lines as a proxy for speaking amount
-   * (captions carry no reliable per-utterance duration, only timestamps of
-   * when each line was last updated).
-   * @returns {{speaker: string, chars: number, percentage: number}[]} sorted descending by share
-   */
   get speakerParticipation() {
     const totals = new Map();
     let grandTotal = 0;
