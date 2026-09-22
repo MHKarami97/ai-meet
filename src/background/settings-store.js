@@ -1,6 +1,12 @@
+/**
+ * Centralized settings persistence (chrome.storage.local).
+ * A single "settings" object is stored so reads/writes stay atomic and simple.
+ */
 const DEFAULTS = {
-  providers: [],
-  activeProviderId: null,
+  providers: [
+    { id: 'manual-default', type: 'manual', name: 'بدون کلید (کپی دستی)', apiKey: '', baseUrl: '', model: '' }
+  ],
+  activeProviderId: 'manual-default',
   defaultTemplateId: 'general-technical',
   languageMode: 'auto',
   defaultLanguage: 'fa',
@@ -10,9 +16,9 @@ const DEFAULTS = {
     owner: '',
     repo: '',
     branch: 'main',
-    pathPrefix: 'meetings',
+    pathPrefix: 'meetings'
   },
-  customTemplates: [],
+  customTemplates: []
 };
 
 export class SettingsStore {
@@ -30,7 +36,7 @@ export class SettingsStore {
 
   async getActiveProvider() {
     const settings = await this.getAll();
-    return settings.providers.find((p) => p.id === settings.activeProviderId) || null;
+    return settings.providers.find((p) => p.id === settings.activeProviderId) || settings.providers[0] || null;
   }
 }
 
