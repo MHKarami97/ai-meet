@@ -39,3 +39,5 @@ label { display: flex; align-items: center; gap: 6px; }
 .remove-btn { background: #2a1620; color: #ef4444; border: 1px solid #4a1f2a; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
 #saveStatus { margin-right: 10px; font-size: 12px; color: #22c55e; }
 .manual-note { font-size: 11px; color: #9aa0bd; background: #131a2b; border: 1px dashed #2a2f47; border-radius: 8px; padding: 8px; margin-top: 6px; }
+.about-section a { color: #7c5cff; text-decoration: none; }
+.about-section a:hover { text-decoration: underline; }

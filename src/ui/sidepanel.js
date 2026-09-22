@@ -4,14 +4,6 @@ import { PROMPT_TEMPLATES } from '../ai/prompt-templates.js';
 import { settingsStore } from '../background/settings-store.js';
 import { PROVIDER_TYPES } from '../ai/providers.js';
 
-/**
- * chrome.runtime.sendMessage serializes responses through structured clone,
- * which strips class prototypes (and therefore getters like
- * Meeting.plainTranscript / Meeting.durationMs). Every meeting object coming
- * back from the background worker MUST be re-wrapped into a real Meeting
- * instance before it is rendered or exported, or those getters resolve to
- * undefined (this caused empty/"undefined" exports and a stuck 00:00:00).
- */
 function toMeeting(raw) {
   return raw ? new Meeting(raw) : null;
 }
@@ -110,6 +102,7 @@ class SidePanelApp {
         <button class="tab-btn ${this.activeTab === 'transcript' ? 'active' : ''}" data-tab="transcript">متن کامل</button>
         <button class="tab-btn ${this.activeTab === 'summary' ? 'active' : ''}" data-tab="summary">خلاصه و تصمیمات</button>
         <button class="tab-btn ${this.activeTab === 'actions' ? 'active' : ''}" data-tab="actions">اقدامات</button>
+        <button class="tab-btn ${this.activeTab === 'participation' ? 'active' : ''}" data-tab="participation">مشارکت</button>
       </div>
       <div id="tabContent"></div>
     `;
@@ -148,6 +141,20 @@ class SidePanelApp {
         (r?.actionItems || [])
           .map((a) => `<div class="action-item"><input type="checkbox" ${a.done ? 'checked' : ''} disabled><div>${this.esc(a.description)}<small>مسئول: ${this.esc(a.owner || 'نامشخص')} — موعد: ${this.esc(a.dueDate || 'نامشخص')}</small></div></div>`)
           .join('') || '<p>اقدامی ثبت نشده.</p>'
+      }</div>`;
+    } else if (this.activeTab === 'participation') {
+      const participation = meeting.speakerParticipation;
+      el.innerHTML = `<div class="card">${
+        participation.length
+          ? participation
+              .map(
+                (p) => `<div class="participation-row">
+                  <div class="participation-label"><span>${this.esc(p.speaker)}</span><span>${p.percentage}%</span></div>
+                  <div class="participation-bar"><div class="participation-fill" style="width:${p.percentage}%"></div></div>
+                </div>`
+              )
+              .join('')
+          : '<p>هنوز داده‌ای برای محاسبه مشارکت ثبت نشده.</p>'
       }</div>`;
     } else {
       el.innerHTML = `<div class="card">${

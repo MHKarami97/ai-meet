@@ -55,7 +55,7 @@ select:hover { border-color: var(--accent); }
 select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,92,255,0.25); }
 select option { background: var(--panel-alt); color: var(--text); }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
 .tab-btn { background: transparent; border: none; color: var(--muted); padding: 8px 12px; cursor: pointer; font-family: inherit; font-size: 13px; border-bottom: 2px solid transparent; }
 .tab-btn.active { color: var(--text); border-color: var(--accent); }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
@@ -69,6 +69,13 @@ select option { background: var(--panel-alt); color: var(--text); }
 .action-item small { color: var(--muted); display: block; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: var(--panel-alt); border: 1px solid var(--border); color: var(--muted); }
 .badge.synced { color: var(--success); border-color: var(--success); }
+
+.participation-row { margin-bottom: 14px; }
+.participation-row:last-child { margin-bottom: 0; }
+.participation-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.participation-label span:last-child { color: var(--accent); font-weight: 700; }
+.participation-bar { height: 10px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--border); overflow: hidden; }
+.participation-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s ease; }
 
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 9999; }
 .modal-backdrop.open { display: flex; }
