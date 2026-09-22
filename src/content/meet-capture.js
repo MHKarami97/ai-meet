@@ -4,19 +4,20 @@
  * background worker with a speaker label and timestamp.
  *
  * Google Meet re-renders the SAME utterance repeatedly while the speaker is
- * still talking (interim results growing word by word: "سلام" -> "سلام این"
- * -> "سلام این متن" ...). Instead of saving every growth as a brand-new line,
- * we detect continuations (new text starts with the previous text, same
- * speaker) and UPDATE the same segment in place. A new segment is only
- * created when the text does not extend the previous one (new sentence /
- * new speaker / caption reset).
+ * still talking (interim results growing word by word). Instead of saving
+ * every growth as a brand-new line, we detect continuations (new text starts
+ * with the previous text, same speaker) and UPDATE the same segment in
+ * place. A new segment is only created when the text does not extend the
+ * previous one (new sentence / new speaker / caption reset).
+ *
+ * Speaker detection is scoped to the DOM block that actually contains the
+ * current caption line (walking up to the block that is a direct child of
+ * the captions container), instead of searching the whole panel — searching
+ * the whole panel always matched the FIRST visible name (typically "You")
+ * regardless of who was actually speaking.
  *
  * Recording does NOT start automatically: a floating toggle button lets the
  * user explicitly start/stop capturing.
- *
- * Meet frequently changes its internal class names, so several selectors are
- * tried, and known non-caption UI strings (e.g. "Jump to bottom") are
- * filtered out so they never get mistaken for the last caption line.
  */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
@@ -44,6 +45,24 @@ function isRealCaptionLine(el) {
 
 function createSegmentId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/**
+ * Scopes the search for a speaker name to the DOM block that owns `lineEl`,
+ * instead of the whole captions panel (which would always return the first
+ * participant listed, usually "You").
+ */
+function findSpeakerForLine(container, lineEl) {
+  let block = lineEl;
+  while (block.parentElement && block.parentElement !== container) {
+    block = block.parentElement;
+  }
+  if (!block || block === container) return null;
+
+  const lineText = lineEl.textContent.trim();
+  const leaves = Array.from(block.querySelectorAll('div, span')).filter(isRealCaptionLine);
+  const nameEl = leaves.find((el) => el !== lineEl && el.textContent.trim() !== lineText);
+  return nameEl?.textContent?.trim() || null;
 }
 
 class MeetCaptionCapture {
@@ -118,8 +137,8 @@ class MeetCaptionCapture {
     const text = lastEl.textContent.trim();
     if (!text || text === this.lastLineText) return;
 
-    const speakerEl = container.querySelector('[aria-label*="speaking" i], .zs7s8d, .KcIKyf');
-    const speaker = speakerEl?.textContent?.trim() || this.lastSpeaker;
+    const detectedSpeaker = findSpeakerForLine(container, lastEl);
+    const speaker = detectedSpeaker || this.lastSpeaker;
 
     const isContinuation =
       this.currentSegmentId !== null &&
