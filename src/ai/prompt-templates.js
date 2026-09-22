@@ -1,101 +1,103 @@
 /**
- * کتابخانه کامل قالب‌های پرامپت. هر قالب یک systemInstruction فارسی دارد که تعیین‌کننده‌ی ساختار JSON
- * خروجی است. قالب‌های ساخته‌شده (builtin) قابل ویرایش نیستند، اما کاربر می‌تواند قالب‌های
- * سفارشی خودرا در chrome.storage.local اضافه، ویرایش یا حذف کند (مدیریت در options.js).
+ * Prompt Template library (Strategy-style content objects consumed by MeetingSummarizer).
+ * Each template targets a distinct meeting type so the AI extracts the right
+ * signal (architecture decisions vs. sales next-steps vs. hiring verdicts, etc).
+ * All templates share one strict JSON output contract so the rest of the app
+ * (report renderer, exporters, GitHub sync) can stay provider-agnostic.
  */
 
 const JSON_SCHEMA_INSTRUCTION = `
-خروجی را دقیقاً به فرمت JSON با این کلیدها بازگردان (بدون هیچ متن اضافه یا مارک‌داون کد):
+فقط و فقط یک JSON معتبر با دقیقاً این کلیدها برگردان (بدون Markdown، بدون توضیح اضافه، بدون بک‌تیک):
 {
-  "executiveSummary": "خلاصه اجرایی در 3 تا 6 جمله",
-  "sections": [{"title": "عنوان بخش","content": "توضیح بخش"}],
-  "keyDecisions": ["تصمیم 1"],
-  "actionItems": [{"description": "...","owner": "نام یا null","dueDate": "تاریخ یا null"}],
-  "openQuestions": ["سوال باقی‌مانده"],
-  "risks": ["ریسک یا نکته مهم"]
+  "executiveSummary": "خلاصه اجرایی جلسه در ۳ تا ۶ جمله فارسی روان",
+  "sections": [{"title": "عنوان بخش موضوعی", "content": "شرح آن بخش از جلسه"}],
+  "keyDecisions": ["تصمیم قطعی گرفته‌شده ۱", "تصمیم قطعی گرفته‌شده ۲"],
+  "actionItems": [{"description": "اقدام مورد نیاز", "owner": "نام مسئول یا null", "dueDate": "تاریخ یا null"}],
+  "openQuestions": ["سوال یا موضوع حل‌نشده ۱"],
+  "risks": ["ریسک، نگرانی یا نکته مهمی که باید دنبال شود"]
 }
-اگر بخشی در جلسه مطرح نشده، آرایه خالی بگذار.
-`;
+اگر بخشی در جلسه مطرح نشده بود، آرایه‌ی متناظر را خالی بگذار. هیچ فیلدی را حذف نکن.`;
 
 export const PROMPT_TEMPLATES = [
   {
     id: 'general-technical',
     name: 'جلسه فنی عمومی',
-    description: 'تمرکز روی تصمیمات فنی، راه‌حل‌های مطرح‌شده و بدهی فنی.',
-    systemInstruction: `شما دستیار ثبت جلسات فنی تیم مهندسی هستید. روی تصمیمات معماری، راه‌حل‌های فنی ارائه‌شده، بدهی فنی/امنیتی، و اقدامات با مسئول و مهلت تمرکز کن.` + JSON_SCHEMA_INSTRUCTION,
+    description: 'مناسب استندآپ، بحث فنی آزاد یا هر جلسه‌ای که قالب مشخصی ندارد.',
+    systemInstruction: `شما یک دستیار حرفه‌ای ثبت جلسات فنی هستید. متن پیاده‌شده‌ی زیر مربوط به یک جلسه فنی تیم نرم‌افزار است. روی راه‌حل‌های مطرح‌شده، تصمیمات معماری/فنی، و کارهای باقی‌مانده تمرکز کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'code-review',
-    name: 'جلسه ریویوی کد',
-    description: 'استخراج نقدهای کد، تغییرات لازم، و موارد عدم‌توافق.',
-    systemInstruction: `شما دستیار بررسی جلسه‌ی ریویوی کد هستید. روی ایرادات تکنیکی مطرح‌شده، موارد عدم‌توافق بین ریویوورها، تصمیمات مربوط به merge/refactor، و بدهی فنی باقی‌مانده تمرکز کن.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'ری‌ویو کد / Pull Request',
+    description: 'جلسات بررسی کد، merge/refactor و بحث‌های کیفیت کد.',
+    systemInstruction: `این جلسه یک نشست بررسی کد (Code Review) است. نکات کیفیت کد، خطرات امنیتی یا عملکردی مطرح‌شده، توافق‌های merge/refactor، و اقدامات لازم برای تغییر کد را استخراج کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'architecture-design',
-    name: 'جلسه معماری / طراحی سیستم',
-    description: 'تمرکز روی گزینه‌های معماری، تریدآف‌ها و بدهی فنی.',
-    systemInstruction: `شما یک معمار نرم‌افزار ارشد هستید. گزینه‌های معماری مطرح‌شده، تریدآف‌های رد‌شده/پذیرفته‌شده، بدهی فنی (اسکیل‌ابلیتی، کارایی، امنیت) و ریسک‌های معماری را مشخص کن.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'طراحی معماری',
+    description: 'جلسات تصمیم‌گیری معماری، انتخاب فناوری یا طراحی سیستم.',
+    systemInstruction: `این یک جلسه طراحی معماری نرم‌افزار است. گزینه‌های معماری مطرح‌شده، دلایل رد یا پذیرش هر گزینه، Trade-off ها، و تصمیم نهایی معماری را دقیق و شفاف استخراج کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'incident-postmortem',
-    name: 'پست‌مورتم اینسیدنت / رفع باگ',
-    description: 'ریشه‌یابی، اثر، اقدامات پیشگیرانه و درس‌ها.',
-    systemInstruction: `شما دستیار تدوین گزارش پست‌مورتم حادثه/باگ هستید. ریشه‌یابی مشکل، زمان‌بندی تشخیص تا رفع، اثر روی کاربران/سیستم، اقدامات پیشگیرانه برای تکرارنشدن، و درس گرفته‌شده را مشخص کن.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'بررسی حادثه (Postmortem)',
+    description: 'جلسات تحلیل یک اختلال یا Incident پس از رفع آن.',
+    systemInstruction: `این جلسه یک Postmortem/بررسی حادثه است. علت ریشه‌ای (Root Cause)، Timeline حادثه، تاثیر روی کاربران/سیستم، و اقدامات پیشگیرانه‌ی آینده را با دقت بالا مشخص کن. در ریسک‌ها حتماً احتمال تکرار حادثه را ذکر کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'sprint-planning',
     name: 'برنامه‌ریزی اسپرینت (Scrum)',
-    description: 'Backlog، تخمین زمان، مسئولیت‌ها.',
-    systemInstruction: `شما دستیار Scrum Master هستید. وظایف انتخاب‌شده از backlog برای اسپرینت، تخمین زمانی هر مورد، مسئول هر وظیفه، و وابستگی‌های مطرح‌شده را مشخص کن.` + JSON_SCHEMA_INSTRUCTION,
+    description: 'جلسات Sprint Planning و تخصیص Backlog به اسپرینت.',
+    systemInstruction: `شما به‌عنوان Scrum Master این جلسه‌ی برنامه‌ریزی اسپرینت را خلاصه می‌کنید. آیتم‌های Backlog انتخاب‌شده، تخمین‌ها، ظرفیت تیم، و ریسک‌های رسیدن به هدف اسپرینت را استخراج کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'retrospective',
-    name: 'ریتروسپکتیو تیم',
-    description: 'نکات مثبت/منفی و اقدامات بهبود.',
-    systemInstruction: `شما دستیار تسهیل جلسات ریتروسپکتیو هستید. موارد خوب پیش‌رفته (مثبت) و موارد نیازمند بهبود (منفی) را در keyDecisions جدا مشخص کن و هر اقدام بهبود پیشنهادی را در actionItems قرار بده.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'رتروسپکتیو',
+    description: 'جلسات بازنگری اسپرینت یا پروژه (چه خوب پیش رفت / چه بد بود).',
+    systemInstruction: `این جلسه رتروسپکتیو تیم است. نکات مثبتی که باید ادامه یابند، نکات منفی که باید اصلاح شوند، و مهم‌تر از همه اقدامات بهبود مشخص (actionItems) با مسئول را استخراج کن. تصمیمات (keyDecisions) باید شامل تغییرات فرآیندی توافق‌شده باشد.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'business-general',
     name: 'جلسه بیزینسی عمومی',
-    description: 'KPI، بودجه، تصمیمات مدیریتی.',
-    systemInstruction: `شما دستیار تهیه گزارش جلسات مدیریتی هستید. روی تصمیمات کلان، ارقام KPI و بودجه مطرح‌شده، و مسولیت‌های اداری تمرکز کن. از زبان رسمی و مدیریتی استفاده کن.` + JSON_SCHEMA_INSTRUCTION,
+    description: 'جلسات مدیریتی، هماهنگی بین‌تیمی یا بررسی وضعیت پروژه.',
+    systemInstruction: `این یک جلسه بیزینسی/مدیریتی است. روی وضعیت پروژه، KPI ها، تصمیمات مدیریتی، بودجه (اگر مطرح شد)، و اقدامات بین‌تیمی تمرکز کن. از اصطلاحات فنی غیرضروری پرهیز کن و خروجی برای مدیران قابل‌فهم باشد.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'sales-client',
-    name: 'جلسه فروش/مشتری',
-    description: 'نیازهای مشتری، ایرادات، قدم بعدی.',
-    systemInstruction: `شما دستیار تیم فروش هستید. نیازها و درد‌های مشتری، ایرادات/تعهدات مطرح‌شده، مسائل قیمتی/قراردادی، و اقدام بعدی فروش را استخراج کن.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'جلسه فروش / مشتری',
+    description: 'تماس یا جلسه با مشتری، مذاکره فروش یا ارائه محصول.',
+    systemInstruction: `این جلسه با یک مشتری یا مخاطب فروش برگزار شده است. نیازها و دردهای مطرح‌شده مشتری، مخالفت‌ها یا نگرانی‌های او (Objections)، تعهدات دو طرف، و قدم بعدی مذاکره (Next Step) را دقیق استخراج کن. در ریسک‌ها هر نگرانی مشتری درباره قیمت/زمان‌بندی/رقیب را ذکر کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'hiring-interview',
-    name: 'جلسه استخدام/مصاحبه',
-    description: 'ارزیابی فنی، نکات قوت، پیشنهاد نهایی.',
-    systemInstruction: `شما دستیار کارشناس منابع انسانی هستید. نکات قوت و ضعف کاندیدا توجه‌آمیز مطرح‌شده، سوالات فنی و پاسخ‌ها، و پیشنهاد نهایی تیم را در keyDecisions درج کن.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'مصاحبه استخدام',
+    description: 'جلسات مصاحبه فنی یا HR برای ارزیابی کاندید.',
+    systemInstruction: `این جلسه یک مصاحبه استخدامی است. نقاط قوت و ضعف کاندید بر اساس صحبت‌های او، سوالات فنی/رفتاری پرسیده‌شده و کیفیت پاسخ‌ها را خلاصه کن. در keyDecisions نتیجه‌گیری یا توصیه نهایی تیم مصاحبه‌کننده (رد/تایید/مرحله بعد) را با دلیل بیاور.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'board-strategy',
     name: 'جلسه هیئت‌مدیره / استراتژی',
-    description: 'تصمیمات سطح کلان، ریسک‌های کلان.',
-    systemInstruction: `شما دبیر اجرایی ثبت جلسات هیئت‌مدیره هستید. فقط تصمیمات راهبردی/استراتژیک، ریسک‌های مطرح‌شده در سطح کلان، و موارد نیازمند پیگیری از سوی هیئت مدیره را مشخص کن، جزئیات عملیاتی روزمره را تا حد امکان درج نکن.` + JSON_SCHEMA_INSTRUCTION,
+    description: 'جلسات سطح بالای استراتژیک، سرمایه‌گذاری یا تصمیمات کلان.',
+    systemInstruction: `این یک جلسه استراتژیک سطح هیئت‌مدیره یا مدیران ارشد است. تصمیمات کلان، تغییرات استراتژی، ریسک‌های تجاری/مالی/بازار، و مسئولیت‌های اجرایی محول‌شده به هر مدیر را با دقت و رسمیت بالا استخراج کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'training-webinar',
-    name: 'جلسه آموزشی / وبینار',
-    description: 'نکات کلیدی تدریس، سوالات حاضرین.',
-    systemInstruction: `شما دستیار خلاصه‌نویسی جلسات آموزشی هستید. executiveSummary را به‌شکل فهرست موضوعات ارائه کن، sections را به ازای مباحث تدریس تقسیم کن، و سوالات بی‌پاسخ حاضرین را در openQuestions بیاور.` + JSON_SCHEMA_INSTRUCTION,
+    name: 'آموزش / وبینار',
+    description: 'جلسات آموزشی، وبینار داخلی یا انتقال دانش (Knowledge Transfer).',
+    systemInstruction: `این یک جلسه آموزشی یا انتقال دانش است. خلاصه اجرایی باید موضوعات آموزشی اصلی را پوشش دهد، sections را بر اساس بخش‌های آموزشی مطرح‌شده بساز، و در openQuestions سوالاتی که شرکت‌کنندگان پرسیدند و بی‌پاسخ ماند را ثبت کن.${JSON_SCHEMA_INSTRUCTION}`
   },
   {
     id: 'quick-summary',
-    name: 'خلاصه سریع (عمومی)',
-    description: 'فقط یک خلاصه کوتاه بدون بخش‌بندی مفصل.',
-    systemInstruction: `فقط executiveSummary را در 3 تا 5 جمله بنویس، مهم‌ترین تصمیمات و اقدامات را هم درج کن، اما sections و risks را خالی بگذار.` + JSON_SCHEMA_INSTRUCTION,
-  },
+    name: 'خلاصه سریع (بدون جزئیات)',
+    description: 'برای جلسات کوتاه که فقط یک خلاصه فشرده لازم دارید.',
+    systemInstruction: `فقط یک خلاصه بسیار فشرده از این جلسه بده. executiveSummary باید در ۳ تا ۵ جمله کل جلسه را پوشش دهد. sections و risks را خالی بگذار مگر نکته‌ی واقعاً مهمی وجود داشته باشد.${JSON_SCHEMA_INSTRUCTION}`
+  }
 ];
 
 export function getTemplateById(id) {
   return PROMPT_TEMPLATES.find((t) => t.id === id) || PROMPT_TEMPLATES[0];
 }
 
+/** Builds the final prompt sent to an AI provider (or shown to the user in manual mode). */
 export function buildPrompt(template, transcriptText) {
-  return `${template.systemInstruction}\n\nمتن تام ترانسکرایب‌شده جلسه:\n---\n${transcriptText}\n---`;
+  return `${template.systemInstruction}\n\n--- متن پیاده‌شده جلسه ---\n${transcriptText}\n--- پایان متن جلسه ---`;
 }
