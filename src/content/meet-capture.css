@@ -1,0 +1,31 @@
+.ai-meet-badge {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 999999;
+  background: linear-gradient(135deg, #6d28d9, #2563eb);
+  color: #fff;
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  direction: rtl;
+}
+
+.ai-meet-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: ai-meet-pulse 1.4s infinite;
+}
+
+@keyframes ai-meet-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
