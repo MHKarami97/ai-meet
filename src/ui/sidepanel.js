@@ -1,8 +1,20 @@
-import { formatTime } from '../db/models.js';
+import { formatTime, Meeting } from '../db/models.js';
 import { exporters } from '../export/exporters.js';
 import { PROMPT_TEMPLATES } from '../ai/prompt-templates.js';
 import { settingsStore } from '../background/settings-store.js';
 import { PROVIDER_TYPES } from '../ai/providers.js';
+
+/**
+ * chrome.runtime.sendMessage serializes responses through structured clone,
+ * which strips class prototypes (and therefore getters like
+ * Meeting.plainTranscript / Meeting.durationMs). Every meeting object coming
+ * back from the background worker MUST be re-wrapped into a real Meeting
+ * instance before it is rendered or exported, or those getters resolve to
+ * undefined (this caused empty/"undefined" exports and a stuck 00:00:00).
+ */
+function toMeeting(raw) {
+  return raw ? new Meeting(raw) : null;
+}
 
 class SidePanelApp {
   constructor() {
@@ -25,14 +37,16 @@ class SidePanelApp {
   }
 
   async loadMeetings(search) {
-    this.meetings = await chrome.runtime.sendMessage({ type: search ? 'meeting:search' : 'meeting:list', payload: { query: search } });
+    const raw = await chrome.runtime.sendMessage({ type: search ? 'meeting:search' : 'meeting:list', payload: { query: search } });
+    this.meetings = (raw || []).map(toMeeting);
     this.renderList();
     if (!this.selectedId && this.meetings[0]) this.selectMeeting(this.meetings[0].id);
   }
 
   async refreshSelected() {
     if (!this.selectedId) return;
-    const meeting = await chrome.runtime.sendMessage({ type: 'meeting:get', payload: { id: this.selectedId } });
+    const raw = await chrome.runtime.sendMessage({ type: 'meeting:get', payload: { id: this.selectedId } });
+    const meeting = toMeeting(raw);
     if (meeting && !meeting.endedAt) this.renderDetail(meeting);
   }
 
@@ -54,8 +68,8 @@ class SidePanelApp {
     this.selectedId = id;
     this.activeTab = 'transcript';
     this.renderList();
-    const meeting = await chrome.runtime.sendMessage({ type: 'meeting:get', payload: { id } });
-    this.renderDetail(meeting);
+    const raw = await chrome.runtime.sendMessage({ type: 'meeting:get', payload: { id } });
+    this.renderDetail(toMeeting(raw));
   }
 
   async renderDetail(meeting) {
@@ -149,9 +163,9 @@ class SidePanelApp {
     btn.disabled = true;
     btn.textContent = 'در حال پردازش...';
     try {
-      const meeting = await chrome.runtime.sendMessage({ type: 'meeting:generateReport', payload: { meetingId, templateId } });
-      if (meeting.error) throw new Error(meeting.error);
-      this.renderDetail(meeting);
+      const raw = await chrome.runtime.sendMessage({ type: 'meeting:generateReport', payload: { meetingId, templateId } });
+      if (raw.error) throw new Error(raw.error);
+      this.renderDetail(toMeeting(raw));
     } catch (err) {
       alert(err.message);
     } finally {
@@ -161,9 +175,9 @@ class SidePanelApp {
 
   async syncToGithub(meetingId) {
     try {
-      const meeting = await chrome.runtime.sendMessage({ type: 'meeting:sync', payload: { meetingId } });
-      if (meeting.error) throw new Error(meeting.error);
-      this.renderDetail(meeting);
+      const raw = await chrome.runtime.sendMessage({ type: 'meeting:sync', payload: { meetingId } });
+      if (raw.error) throw new Error(raw.error);
+      this.renderDetail(toMeeting(raw));
     } catch (err) {
       alert(err.message);
     }
@@ -202,13 +216,13 @@ class SidePanelApp {
     const btn = document.getElementById('processManualBtn');
     btn.disabled = true;
     try {
-      const meeting = await chrome.runtime.sendMessage({
+      const raw = await chrome.runtime.sendMessage({
         type: 'meeting:importManualReport',
         payload: { meetingId: this.manualContext.meetingId, templateId: this.manualContext.templateId, rawText }
       });
-      if (meeting.error) throw new Error(meeting.error);
+      if (raw.error) throw new Error(raw.error);
       this.closeManualModal();
-      this.renderDetail(meeting);
+      this.renderDetail(toMeeting(raw));
     } catch (err) {
       errorEl.textContent = `خطا در پردازش پاسخ: ${err.message}. مطمئن شوید کل خروجی JSON مدل را بدون تغییر کپی کرده‌اید.`;
     } finally {
