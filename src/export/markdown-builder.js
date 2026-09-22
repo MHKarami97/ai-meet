@@ -17,6 +17,13 @@ export class MeetingReportMarkdownBuilder {
     parts.push(`- زبان: ${meeting.language}`);
     parts.push('');
 
+    const participation = meeting.speakerParticipation;
+    if (participation.length > 0) {
+      parts.push('## درصد مشارکت افراد');
+      participation.forEach((p) => parts.push(`- ${p.speaker}: ${p.percentage}%`));
+      parts.push('');
+    }
+
     if (meeting.report) {
       const r = meeting.report;
       parts.push('## خلاصه اجرایی');
@@ -52,6 +59,9 @@ export class MeetingReportMarkdownBuilder {
     parts.push('```');
     parts.push(meeting.plainTranscript);
     parts.push('```');
+    parts.push('');
+    parts.push('---');
+    parts.push('ساخته‌شده با AI Meet — mhkarami97.ir');
 
     return parts.join('\n');
   }

@@ -108,4 +108,29 @@ export class Meeting {
     if (!this.endedAt) return Date.now() - new Date(this.startedAt).getTime();
     return new Date(this.endedAt).getTime() - new Date(this.startedAt).getTime();
   }
+
+  /**
+   * Estimates each speaker's share of the conversation using the character
+   * count of their finalized caption lines as a proxy for speaking amount
+   * (captions carry no reliable per-utterance duration, only timestamps of
+   * when each line was last updated).
+   * @returns {{speaker: string, chars: number, percentage: number}[]} sorted descending by share
+   */
+  get speakerParticipation() {
+    const totals = new Map();
+    let grandTotal = 0;
+    for (const segment of this.segments) {
+      const length = (segment.text || '').trim().length;
+      if (length === 0) continue;
+      totals.set(segment.speaker, (totals.get(segment.speaker) || 0) + length);
+      grandTotal += length;
+    }
+    return Array.from(totals.entries())
+      .map(([speaker, chars]) => ({
+        speaker,
+        chars,
+        percentage: grandTotal > 0 ? Math.round((chars / grandTotal) * 1000) / 10 : 0
+      }))
+      .sort((a, b) => b.chars - a.chars);
+  }
 }
