@@ -1,67 +1,65 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <title>AI Meet - تنظیمات</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="options.css" />
+<meta charset="utf-8">
+<title>تنظیمات AI Meet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="page">
-    <h1>تنظیمات AI Meet</h1>
+<div class="page">
+  <h1>⚙️ تنظیمات AI Meet</h1>
 
-    <section class="section">
-      <h2>ارائه‌دهندگان هوش مصنوعی (Provider)</h2>
-      <p class="hint">هر کاربر می‌تواند چند کلید API از سرویس‌های مختلف اضافه کند. یک پروفایل را «فعال» انتخاب کنید.</p>
-      <div id="providerList"></div>
-      <button class="btn btn-secondary" id="addProviderBtn">+ افزودن Provider</button>
-    </section>
+  <section class="section">
+    <h2>Providerهای هوش مصنوعی</h2>
+    <p class="hint">می‌توانید چند Provider تعریف کنید (Gemini، OpenAI، Cloudflare AI Gateway، یا حالت «بدون کلید»)
+      و هرکدام را برای جلسات مختلف انتخاب کنید. کلید API فقط در همین دستگاه ذخیره می‌شود.</p>
+    <div id="providerList"></div>
+    <button class="btn btn-secondary" id="addProviderBtn">+ افزودن Provider</button>
+  </section>
 
-    <section class="section">
-      <h2>قالب‌های پرامپت</h2>
-      <p class="hint">قالب پیش‌فرض برای جلسات جدید را انتخاب کنید، یا قالب اختصاصی خودتان را بسازید.</p>
-      <div class="row">
-        <label>قالب پیش‌فرض</label>
-        <select id="defaultTemplateSelect"></select>
-      </div>
-      <div id="templateList"></div>
-      <button class="btn btn-secondary" id="addTemplateBtn">+ افزودن قالب اختصاصی</button>
-    </section>
+  <section class="section">
+    <h2>قالب پرامپت پیش‌فرض</h2>
+    <p class="hint">برای هر جلسه می‌توانید قالب را عوض کنید؛ این فقط پیش‌فرض ابتدایی است.</p>
+    <div class="row">
+      <label>قالب پیش‌فرض</label>
+      <select id="defaultTemplateSelect"></select>
+    </div>
+    <div id="templateList"></div>
+    <button class="btn btn-secondary" id="addTemplateBtn">+ افزودن قالب اختصاصی</button>
+  </section>
 
-    <section class="section">
-      <h2>زبان جلسه</h2>
-      <div class="row">
-        <label><input type="radio" name="languageMode" value="auto" /> تشخیص خودکار (از روی متن زیرنویس)</label>
-        <label><input type="radio" name="languageMode" value="manual" /> تعیین دستی</label>
-      </div>
-      <div class="row">
-        <label>زبان پیش‌فرض (در حالت دستی)</label>
-        <select id="defaultLanguageSelect">
-          <option value="fa">فارسی</option>
-          <option value="en">انگلیسی</option>
-          <option value="ar">عربی</option>
-        </select>
-      </div>
-      <p class="hint">توجه: زبان واقعی زیرنویس را باید توسط منوی داخلی Google Meet (Settings &gt; Captions) روی فارسی تنظیم کنید؛ این گزینه فقط برای برچسب در افزونه است.</p>
-    </section>
+  <section class="section">
+    <h2>زبان جلسه</h2>
+    <div class="row">
+      <label><input type="radio" name="languageMode" value="auto"> تشخیص خودکار از روی زیرنویس گوگل میت</label>
+      <label><input type="radio" name="languageMode" value="manual"> تعیین دستی زبان</label>
+    </div>
+    <div class="row">
+      <label>زبان پیش‌فرض (در حالت دستی)</label>
+      <select id="defaultLanguageSelect">
+        <option value="fa">فارسی</option>
+        <option value="en">English</option>
+        <option value="ar">العربیة</option>
+      </select>
+    </div>
+    <p class="hint">توجه: زبان زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).</p>
+  </section>
 
-    <section class="section">
-      <h2>همگام‌سازی با GitHub</h2>
-      <div class="row">
-        <label><input type="checkbox" id="githubEnabled" /> ذخیره‌سازی خودکار در GitHub فعال باشد</label>
-      </div>
-      <div class="row"><label>Personal Access Token</label><input id="githubToken" type="password" placeholder="ghp_..." /></div>
-      <div class="row"><label>مالک ریپو (owner)</label><input id="githubOwner" type="text" placeholder="MHKarami97" /></div>
-      <div class="row"><label>نام ریپو</label><input id="githubRepo" type="text" placeholder="meeting-archive" /></div>
-      <div class="row"><label>برنچ</label><input id="githubBranch" type="text" value="main" /></div>
-      <div class="row"><label>پیشوند مسیر</label><input id="githubPathPrefix" type="text" value="meetings" /></div>
-      <p class="hint">توکن باید دسترسی «Contents: Read and write» روی ریپوی مقصد داشته باشد (Fine-grained PAT).</p>
-    </section>
+  <section class="section">
+    <h2>همگام‌سازی با GitHub</h2>
+    <div class="row"><label><input type="checkbox" id="githubEnabled"> فعال‌سازی همگام‌سازی خودکار با GitHub</label></div>
+    <div class="row"><label>Personal Access Token</label><input id="githubToken" type="password" placeholder="ghp_..."></div>
+    <div class="row"><label>صاحب مخزن (owner)</label><input id="githubOwner" type="text" placeholder="MHKarami97"></div>
+    <div class="row"><label>نام مخزن</label><input id="githubRepo" type="text" placeholder="meeting-archive"></div>
+    <div class="row"><label>Branch</label><input id="githubBranch" type="text" value="main"></div>
+    <div class="row"><label>مسیر پایه</label><input id="githubPathPrefix" type="text" value="meetings"></div>
+    <p class="hint">توکن باید دسترسی Contents: Read and write روی مخزن مقصد داشته باشد (Fine-grained PAT پیشنهاد می‌شود).</p>
+  </section>
 
-    <button class="btn btn-primary" id="saveBtn">ذخیره تنظیمات</button>
-    <span id="saveStatus"></span>
-  </div>
-
-  <script type="module" src="options.js"></script>
+  <button class="btn btn-primary" id="saveBtn">ذخیره تنظیمات</button>
+  <span id="saveStatus"></span>
+</div>
+<script type="module" src="options.js"></script>
 </body>
 </html>

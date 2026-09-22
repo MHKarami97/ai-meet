@@ -4,16 +4,19 @@ body { margin: 0; font-family: 'Vazirmatn', Tahoma, sans-serif; background: #0f1
 h1 { font-size: 20px; margin-bottom: 24px; }
 .section { background: #171a2b; border: 1px solid #2a2f47; border-radius: 14px; padding: 18px; margin-bottom: 18px; }
 .section h2 { font-size: 15px; margin: 0 0 6px; color: #7c5cff; }
-.hint { font-size: 12px; color: #9aa0bd; margin: 4px 0 14px; }
+.hint { font-size: 12px; color: #9aa0bd; margin: 4px 0 14px; line-height: 1.7; }
 .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; }
-input[type="text"], input[type="password"], select {
-  padding: 9px 10px; border-radius: 8px; border: 1px solid #2a2f47; background: #1f2338; color: #eef0f7; font-family: inherit;
+input[type="text"], input[type="password"], select, textarea {
+  padding: 9px 10px; border-radius: 8px; border: 1px solid #2a2f47;
+  background: #1f2338; color: #eef0f7; font-family: inherit;
 }
 label { display: flex; align-items: center; gap: 6px; }
 .btn { border: none; border-radius: 10px; padding: 10px 16px; font-family: inherit; font-size: 13px; cursor: pointer; font-weight: 600; }
 .btn-primary { background: linear-gradient(135deg, #7c5cff, #2563eb); color: #fff; }
 .btn-secondary { background: #1f2338; color: #eef0f7; border: 1px solid #2a2f47; margin-top: 8px; }
 .provider-card, .template-card { background: #1f2338; border: 1px solid #2a2f47; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-.provider-card .row-inline { display: flex; gap: 8px; flex-wrap: wrap; }
-.provider-card .row-inline > * { flex: 1; min-width: 140px; }
+.provider-card .row-inline, .template-card .row-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+.provider-card .row-inline > *, .template-card .row-inline > * { flex: 1; min-width: 140px; }
+.remove-btn { background: #2a1620; color: #ef4444; border: 1px solid #4a1f2a; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
 #saveStatus { margin-right: 10px; font-size: 12px; color: #22c55e; }
+.manual-note { font-size: 11px; color: #9aa0bd; background: #131a2b; border: 1px dashed #2a2f47; border-radius: 8px; padding: 8px; margin-top: 6px; }
