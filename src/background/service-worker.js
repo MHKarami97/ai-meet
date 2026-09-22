@@ -61,10 +61,21 @@ async function onMeetingStart({ meetUrl, language }) {
   return meeting;
 }
 
+/**
+ * Upserts by segment.id: Google Meet keeps re-rendering the same utterance
+ * while a speaker is still talking, so the content script sends growing
+ * text under the SAME id until the sentence is finished. Only a genuinely
+ * new utterance arrives with a new id and gets appended.
+ */
 async function onMeetingSegment({ meetingId, segment }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
   if (!meeting) throw new Error('جلسه پیدا نشد.');
-  meeting.segments.push(segment);
+  const existingIndex = meeting.segments.findIndex((s) => s.id === segment.id);
+  if (existingIndex >= 0) {
+    meeting.segments[existingIndex] = segment;
+  } else {
+    meeting.segments.push(segment);
+  }
   await meetingDatabase.saveMeeting(meeting);
   return { ok: true };
 }

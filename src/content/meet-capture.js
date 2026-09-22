@@ -3,9 +3,16 @@
  * the user inside Meet itself) and streams each finalized line to the
  * background worker with a speaker label and timestamp.
  *
+ * Google Meet re-renders the SAME utterance repeatedly while the speaker is
+ * still talking (interim results growing word by word: "سلام" -> "سلام این"
+ * -> "سلام این متن" ...). Instead of saving every growth as a brand-new line,
+ * we detect continuations (new text starts with the previous text, same
+ * speaker) and UPDATE the same segment in place. A new segment is only
+ * created when the text does not extend the previous one (new sentence /
+ * new speaker / caption reset).
+ *
  * Recording does NOT start automatically: a floating toggle button lets the
- * user explicitly start/stop capturing, and its state (recording/stopped) is
- * always visible so it never silently "keeps listening" in the background.
+ * user explicitly start/stop capturing.
  *
  * Meet frequently changes its internal class names, so several selectors are
  * tried, and known non-caption UI strings (e.g. "Jump to bottom") are
@@ -35,13 +42,18 @@ function isRealCaptionLine(el) {
   return true;
 }
 
+function createSegmentId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 class MeetCaptionCapture {
   constructor() {
     this.meetingId = null;
     this.observer = null;
     this.rootObserver = null;
-    this.lastLineKey = '';
+    this.lastLineText = '';
     this.lastSpeaker = 'ناشناس';
+    this.currentSegmentId = null;
     this.badgeEl = null;
     this.isRecording = false;
   }
@@ -59,7 +71,8 @@ class MeetCaptionCapture {
     });
     this.meetingId = meeting.id;
     this.isRecording = true;
-    this.lastLineKey = '';
+    this.lastLineText = '';
+    this.currentSegmentId = null;
     this.updateBadge();
     this.attachObserver();
   }
@@ -69,6 +82,7 @@ class MeetCaptionCapture {
     this.observer?.disconnect();
     this.rootObserver?.disconnect();
     this.isRecording = false;
+    this.currentSegmentId = null;
     this.updateBadge();
     if (this.meetingId) await this.sendMessage('meeting:end', { meetingId: this.meetingId });
   }
@@ -102,18 +116,30 @@ class MeetCaptionCapture {
 
     const lastEl = lines[lines.length - 1];
     const text = lastEl.textContent.trim();
-    if (!text || text === this.lastLineKey) return;
-    this.lastLineKey = text;
+    if (!text || text === this.lastLineText) return;
 
     const speakerEl = container.querySelector('[aria-label*="speaking" i], .zs7s8d, .KcIKyf');
-    this.lastSpeaker = speakerEl?.textContent?.trim() || this.lastSpeaker;
+    const speaker = speakerEl?.textContent?.trim() || this.lastSpeaker;
+
+    const isContinuation =
+      this.currentSegmentId !== null &&
+      speaker === this.lastSpeaker &&
+      this.lastLineText.length > 0 &&
+      text.startsWith(this.lastLineText);
+
+    if (!isContinuation) {
+      this.currentSegmentId = createSegmentId();
+    }
+
+    this.lastLineText = text;
+    this.lastSpeaker = speaker;
 
     const language = PERSIAN_RANGE.test(text) ? 'fa' : 'en';
     this.sendMessage('meeting:segment', {
       meetingId: this.meetingId,
       segment: {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        speaker: this.lastSpeaker,
+        id: this.currentSegmentId,
+        speaker,
         text,
         timestampMs: Date.now(),
         language
