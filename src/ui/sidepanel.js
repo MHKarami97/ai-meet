@@ -8,7 +8,7 @@ class SidePanelApp {
   constructor() {
     this.meetings = [];
     this.selectedId = null;
-    this.activeTab = 'summary';
+    this.activeTab = 'transcript';
     this.pollTimer = null;
     this.manualContext = null;
   }
@@ -52,7 +52,7 @@ class SidePanelApp {
 
   async selectMeeting(id) {
     this.selectedId = id;
-    this.activeTab = 'summary';
+    this.activeTab = 'transcript';
     this.renderList();
     const meeting = await chrome.runtime.sendMessage({ type: 'meeting:get', payload: { id } });
     this.renderDetail(meeting);
@@ -87,15 +87,15 @@ class SidePanelApp {
         <select id="templateSelect">${templateOptions}</select>
         <button class="btn btn-primary" id="generateBtn">${meeting.report ? '🔁 بازسازی گزارش' : (isManualProvider ? '📋 ساخت متن برای AI' : '✨ ساخت گزارش با AI')}</button>
         <button class="btn btn-secondary" id="syncBtn">☁️ همگام‌سازی با GitHub</button>
-        <button class="btn btn-secondary" data-export="md">⬇ Markdown</button>
         <button class="btn btn-secondary" data-export="doc">⬇ Word</button>
         <button class="btn btn-secondary" data-export="pdf">⬇ PDF</button>
         <button class="btn btn-secondary" data-export="txt">⬇ TXT</button>
+        <button class="btn btn-secondary" data-export="md">⬇ Markdown</button>
       </div>
       <div class="tabs">
+        <button class="tab-btn ${this.activeTab === 'transcript' ? 'active' : ''}" data-tab="transcript">متن کامل</button>
         <button class="tab-btn ${this.activeTab === 'summary' ? 'active' : ''}" data-tab="summary">خلاصه و تصمیمات</button>
         <button class="tab-btn ${this.activeTab === 'actions' ? 'active' : ''}" data-tab="actions">اقدامات</button>
-        <button class="tab-btn ${this.activeTab === 'transcript' ? 'active' : ''}" data-tab="transcript">متن کامل</button>
       </div>
       <div id="tabContent"></div>
     `;

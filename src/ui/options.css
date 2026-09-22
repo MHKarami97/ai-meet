@@ -1,15 +1,34 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Vazirmatn', Tahoma, sans-serif; background: #0f1220; color: #eef0f7; }
+
+* { scrollbar-width: thin; scrollbar-color: #7c5cff #1f2338; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #1f2338; border-radius: 10px; }
+*::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #7c5cff, #2563eb); border-radius: 10px; border: 2px solid #1f2338; }
+*::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+
 .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
 h1 { font-size: 20px; margin-bottom: 24px; }
 .section { background: #171a2b; border: 1px solid #2a2f47; border-radius: 14px; padding: 18px; margin-bottom: 18px; }
 .section h2 { font-size: 15px; margin: 0 0 6px; color: #7c5cff; }
 .hint { font-size: 12px; color: #9aa0bd; margin: 4px 0 14px; line-height: 1.7; }
 .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; }
-input[type="text"], input[type="password"], select, textarea {
+input[type="text"], input[type="password"], textarea {
   padding: 9px 10px; border-radius: 8px; border: 1px solid #2a2f47;
   background: #1f2338; color: #eef0f7; font-family: inherit;
 }
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #1f2338 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%237c5cff'/></svg>") no-repeat left 10px center;
+  color: #eef0f7;
+  border: 1px solid #2a2f47;
+  border-radius: 8px;
+  padding: 9px 10px 9px 28px;
+  font-family: inherit;
+}
+select:hover, select:focus { border-color: #7c5cff; outline: none; }
+select option { background: #1f2338; color: #eef0f7; }
 label { display: flex; align-items: center; gap: 6px; }
 .btn { border: none; border-radius: 10px; padding: 10px 16px; font-family: inherit; font-size: 13px; cursor: pointer; font-weight: 600; }
 .btn-primary { background: linear-gradient(135deg, #7c5cff, #2563eb); color: #fff; }

@@ -3,9 +3,13 @@
  * the user inside Meet itself) and streams each finalized line to the
  * background worker with a speaker label and timestamp.
  *
+ * Recording does NOT start automatically: a floating toggle button lets the
+ * user explicitly start/stop capturing, and its state (recording/stopped) is
+ * always visible so it never silently "keeps listening" in the background.
+ *
  * Meet frequently changes its internal class names, so several selectors are
- * tried and the script also falls back to a body-wide MutationObserver that
- * waits for the caption container to appear.
+ * tried, and known non-caption UI strings (e.g. "Jump to bottom") are
+ * filtered out so they never get mistaken for the last caption line.
  */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
@@ -14,6 +18,22 @@ const CAPTION_CONTAINER_SELECTORS = [
   'div[aria-label*="caption" i]'
 ];
 const PERSIAN_RANGE = /[\u0600-\u06FF]/;
+const NON_CAPTION_TEXT_BLOCKLIST = [
+  'jump to bottom',
+  'پرش به پایین',
+  'پرش به انتها',
+  'turn on captions',
+  'turn off captions'
+];
+
+function isRealCaptionLine(el) {
+  if (el.children.length > 0) return false;
+  const text = el.textContent?.trim();
+  if (!text) return false;
+  if (NON_CAPTION_TEXT_BLOCKLIST.includes(text.toLowerCase())) return false;
+  if (el.closest('button, [role="button"], a')) return false;
+  return true;
+}
 
 class MeetCaptionCapture {
   constructor() {
@@ -23,25 +43,39 @@ class MeetCaptionCapture {
     this.lastLineKey = '';
     this.lastSpeaker = 'ناشناس';
     this.badgeEl = null;
+    this.isRecording = false;
+  }
+
+  init() {
+    this.renderBadge();
   }
 
   async start() {
+    if (this.isRecording) return;
     const settings = await this.getSettings();
     const meeting = await this.sendMessage('meeting:start', {
       meetUrl: location.href,
       language: settings.languageMode === 'manual' ? settings.defaultLanguage : 'auto'
     });
     this.meetingId = meeting.id;
-    this.renderBadge();
+    this.isRecording = true;
+    this.lastLineKey = '';
+    this.updateBadge();
     this.attachObserver();
-    window.addEventListener('beforeunload', () => this.stop());
   }
 
   async stop() {
-    if (!this.meetingId) return;
+    if (!this.isRecording) return;
     this.observer?.disconnect();
     this.rootObserver?.disconnect();
-    await this.sendMessage('meeting:end', { meetingId: this.meetingId });
+    this.isRecording = false;
+    this.updateBadge();
+    if (this.meetingId) await this.sendMessage('meeting:end', { meetingId: this.meetingId });
+  }
+
+  toggle() {
+    if (this.isRecording) this.stop();
+    else this.start();
   }
 
   attachObserver() {
@@ -62,7 +96,8 @@ class MeetCaptionCapture {
   }
 
   onCaptionsMutated(container) {
-    const lines = Array.from(container.querySelectorAll('div, span')).filter((el) => el.textContent?.trim());
+    if (!this.isRecording) return;
+    const lines = Array.from(container.querySelectorAll('div, span')).filter(isRealCaptionLine);
     if (lines.length === 0) return;
 
     const lastEl = lines[lines.length - 1];
@@ -87,10 +122,21 @@ class MeetCaptionCapture {
   }
 
   renderBadge() {
-    this.badgeEl = document.createElement('div');
-    this.badgeEl.className = 'ai-meet-badge';
-    this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet در حال ضبط رونوشت است</span>';
+    this.badgeEl = document.createElement('button');
+    this.badgeEl.type = 'button';
+    this.badgeEl.className = 'ai-meet-badge stopped';
+    this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet — برای شروع ضبط کلیک کنید</span>';
+    this.badgeEl.addEventListener('click', () => this.toggle());
     document.body.appendChild(this.badgeEl);
+    window.addEventListener('beforeunload', () => this.stop());
+  }
+
+  updateBadge() {
+    if (!this.badgeEl) return;
+    this.badgeEl.classList.toggle('stopped', !this.isRecording);
+    this.badgeEl.innerHTML = this.isRecording
+      ? '<span class="dot"></span><span>AI Meet در حال ضبط — کلیک برای پایان</span>'
+      : '<span class="dot"></span><span>AI Meet — برای شروع ضبط کلیک کنید</span>';
   }
 
   async getSettings() {
@@ -105,14 +151,14 @@ class MeetCaptionCapture {
 
 const capture = new MeetCaptionCapture();
 
-function waitForMeetingUiThenStart() {
+function waitForMeetingUiThenInit() {
   const readyCheck = setInterval(() => {
     const inMeeting = document.querySelector('[data-meeting-title], [jsname="HlFzId"]');
     if (inMeeting) {
       clearInterval(readyCheck);
-      capture.start();
+      capture.init();
     }
   }, 1500);
 }
 
-waitForMeetingUiThenStart();
+waitForMeetingUiThenInit();
