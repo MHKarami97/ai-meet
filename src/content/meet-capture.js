@@ -1,106 +1,104 @@
 /**
- * این اسکریپت داخل تب Google Meet اجرا می‌شود. وظیفه:
- * 1) فعال‌سازی زیرنویس زنده روی زبان موردنظر (منوی داخلی Meet)
- * 2) خواندن پنل زیرنویس با MutationObserver و استخراج گوینده/متن
- * 3) ارسال هر خط نهایی‌شده به background برای ذخیره‌سازی
+ * Reads Google Meet's own live-caption panel (set to Persian, English, etc. by
+ * the user inside Meet itself) and streams each finalized line to the
+ * background worker with a speaker label and timestamp.
  *
- * هشدار: DOM گوگل میت مداوم تغییر می‌کند. اگر پس از یک به‌روزرسانی متوقف شد،
- * اولین جا برای بررسی، CAPTION_CONTAINER_SELECTORS و توابع استخراج متن/گوینده هستند.
+ * Meet frequently changes its internal class names, so several selectors are
+ * tried and the script also falls back to a body-wide MutationObserver that
+ * waits for the caption container to appear.
  */
-
 const CAPTION_CONTAINER_SELECTORS = [
-  '[jsname="dsyhDe"]',
+  '[jsname="tgaKEf"]',
   '[jscontroller="KPn5nb"]',
-  'div[aria-label*="Captions"]',
-  'div[aria-label*="زیرنویس"]',
+  'div[aria-label="Captions"]',
+  'div[aria-label*="caption" i]'
 ];
-
 const PERSIAN_RANGE = /[\u0600-\u06FF]/;
 
 class MeetCaptionCapture {
   constructor() {
     this.meetingId = null;
     this.observer = null;
+    this.rootObserver = null;
     this.lastLineKey = '';
-    this.lastSpeaker = null;
+    this.lastSpeaker = 'ناشناس';
     this.badgeEl = null;
   }
 
   async start() {
-    const settings = await this.#getSettings();
-    const meeting = await this.#sendMessage('meeting:start', {
+    const settings = await this.getSettings();
+    const meeting = await this.sendMessage('meeting:start', {
       meetUrl: location.href,
-      language: settings.languageMode === 'manual' ? settings.defaultLanguage : 'auto',
+      language: settings.languageMode === 'manual' ? settings.defaultLanguage : 'auto'
     });
     this.meetingId = meeting.id;
-    this.#renderBadge();
-    this.#attachObserver();
+    this.renderBadge();
+    this.attachObserver();
     window.addEventListener('beforeunload', () => this.stop());
   }
 
   async stop() {
     if (!this.meetingId) return;
     this.observer?.disconnect();
-    await this.#sendMessage('meeting:end', { meetingId: this.meetingId });
+    this.rootObserver?.disconnect();
+    await this.sendMessage('meeting:end', { meetingId: this.meetingId });
   }
 
-  #attachObserver() {
+  attachObserver() {
     const tryAttach = () => {
       const container = CAPTION_CONTAINER_SELECTORS.map((sel) => document.querySelector(sel)).find(Boolean);
       if (!container) return false;
-      this.observer = new MutationObserver(() => this.#onCaptionsMutated(container));
+      this.observer = new MutationObserver(() => this.onCaptionsMutated(container));
       this.observer.observe(container, { childList: true, subtree: true, characterData: true });
       return true;
     };
 
-    if (!tryAttach()) {
-      const rootObserver = new MutationObserver(() => {
-        if (tryAttach()) rootObserver.disconnect();
-      });
-      rootObserver.observe(document.body, { childList: true, subtree: true });
-    }
+    if (tryAttach()) return;
+
+    this.rootObserver = new MutationObserver(() => {
+      if (tryAttach()) this.rootObserver.disconnect();
+    });
+    this.rootObserver.observe(document.body, { childList: true, subtree: true });
   }
 
-  #onCaptionsMutated(container) {
+  onCaptionsMutated(container) {
     const lines = Array.from(container.querySelectorAll('div, span')).filter((el) => el.textContent?.trim());
     if (lines.length === 0) return;
 
     const lastEl = lines[lines.length - 1];
     const text = lastEl.textContent.trim();
     if (!text || text === this.lastLineKey) return;
-
-    const speakerEl = container.querySelector('[aria-label*="speaking"], .zs7s8d, .KcIKyf');
-    const speaker = speakerEl?.textContent?.trim() || this.lastSpeaker || 'نامشخص';
-    this.lastSpeaker = speaker;
     this.lastLineKey = text;
 
-    const language = PERSIAN_RANGE.test(text) ? 'fa' : 'en';
+    const speakerEl = container.querySelector('[aria-label*="speaking" i], .zs7s8d, .KcIKyf');
+    this.lastSpeaker = speakerEl?.textContent?.trim() || this.lastSpeaker;
 
-    this.#sendMessage('meeting:segment', {
+    const language = PERSIAN_RANGE.test(text) ? 'fa' : 'en';
+    this.sendMessage('meeting:segment', {
       meetingId: this.meetingId,
       segment: {
-        id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        speaker,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        speaker: this.lastSpeaker,
         text,
         timestampMs: Date.now(),
-        language,
-      },
+        language
+      }
     });
   }
 
-  #renderBadge() {
+  renderBadge() {
     this.badgeEl = document.createElement('div');
     this.badgeEl.className = 'ai-meet-badge';
-    this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet در حال ضبط رونوشت</span>';
+    this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet در حال ضبط رونوشت است</span>';
     document.body.appendChild(this.badgeEl);
   }
 
-  async #getSettings() {
+  async getSettings() {
     const stored = await chrome.storage.local.get('settings');
     return stored.settings || { languageMode: 'auto', defaultLanguage: 'fa' };
   }
 
-  #sendMessage(type, payload) {
+  sendMessage(type, payload) {
     return chrome.runtime.sendMessage({ type, payload });
   }
 }
