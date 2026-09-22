@@ -1,1 +1,4 @@
-PLACEHOLDER
+{
+  "extName": {"message": "AI Meet", "description": "Extension name"},
+  "extDescription": {"message": "Record, transcribe and summarize Google Meet meetings with full Persian support.", "description": "Extension description"}
+}

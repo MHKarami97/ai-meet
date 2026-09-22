@@ -1,1 +1,4 @@
-PLACEHOLDER
+{
+  "extName": {"message": "AI Meet", "description": "نام افزونه"},
+  "extDescription": {"message": "ضبط، رونوشت‌برداری و خلاصه‌سازی هوشمند جلسات Google Meet با پشتیبانی کامل فارسی.", "description": "توضیح افزونه"}
+}
