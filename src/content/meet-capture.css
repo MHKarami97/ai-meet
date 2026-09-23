@@ -5,7 +5,7 @@
   z-index: 999999;
   background: linear-gradient(135deg, #6d28d9, #2563eb);
   color: #fff;
-  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  font-family: "Vazirmatn", Tahoma, sans-serif;
   font-size: 13px;
   padding: 8px 14px;
   border: none;
@@ -16,7 +16,9 @@
   gap: 8px;
   direction: rtl;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .ai-meet-badge:hover {
@@ -42,7 +44,13 @@
 }
 
 @keyframes ai-meet-pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
 }

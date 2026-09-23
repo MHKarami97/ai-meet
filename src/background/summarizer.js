@@ -27,8 +27,8 @@ async function resolveTemplate(templateId, settings) {
  * both swappable without touching this class.
  *
  * Two paths are supported:
- *  1. Automatic — an AiProvider with a real API key calls complete(prompt).
- *  2. Manual    — no key is stored; buildManualPrompt() hands the user a
+ *  1. Automatic - an AiProvider with a real API key calls complete(prompt).
+ *  2. Manual    - no key is stored; buildManualPrompt() hands the user a
  *     ready-to-paste prompt, and importManualReport() turns whatever the user
  *     pastes back from any AI chat into the same MeetingReport structure.
  */

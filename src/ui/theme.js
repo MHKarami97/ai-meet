@@ -1,4 +1,4 @@
-import { settingsStore } from '../background/settings-store.js';
+import { settingsStore } from "../background/settings-store.js";
 
 /**
  * Applies the persisted theme ('dark' default, or 'light') to the current
@@ -12,5 +12,8 @@ export async function applyTheme() {
 }
 
 function setThemeAttribute(theme) {
-  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+  document.documentElement.setAttribute(
+    "data-theme",
+    theme === "light" ? "light" : "dark",
+  );
 }

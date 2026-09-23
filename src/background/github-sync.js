@@ -4,7 +4,13 @@
  * @see https://docs.github.com/en/rest/repos/contents
  */
 export class GitHubSyncClient {
-  constructor({ token, owner, repo, branch = 'main', pathPrefix = 'meetings' }) {
+  constructor({
+    token,
+    owner,
+    repo,
+    branch = "main",
+    pathPrefix = "meetings",
+  }) {
     this.token = token;
     this.owner = owner;
     this.repo = repo;
@@ -15,9 +21,9 @@ export class GitHubSyncClient {
   get headers() {
     return {
       Authorization: `Bearer ${this.token}`,
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      'X-GitHub-Api-Version': '2022-11-28'
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
     };
   }
 
@@ -26,7 +32,9 @@ export class GitHubSyncClient {
   }
 
   async getExistingSha(path) {
-    const res = await fetch(`${this.apiBase}${path}?ref=${this.branch}`, { headers: this.headers });
+    const res = await fetch(`${this.apiBase}${path}?ref=${this.branch}`, {
+      headers: this.headers,
+    });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub read error ${res.status}`);
     const json = await res.json();
@@ -39,24 +47,39 @@ export class GitHubSyncClient {
       message,
       content: btoa(unescape(encodeURIComponent(contentUtf8))),
       branch: this.branch,
-      ...(sha ? { sha } : {})
+      ...(sha ? { sha } : {}),
     };
     const res = await fetch(`${this.apiBase}${path}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: this.headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`GitHub write error ${res.status}: ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(`GitHub write error ${res.status}: ${await res.text()}`);
     return res.json();
   }
 
   async syncMeeting(meeting, markdownContent) {
     const dateFolder = new Date(meeting.startedAt).toISOString().slice(0, 10);
-    const safeTitle = meeting.title.replace(/[^\u0600-\u06FFa-zA-Z0-9-_ ]/g, '').slice(0, 60) || meeting.id;
+    const safeTitle =
+      meeting.title.replace(/[^\u0600-\u06FFa-zA-Z0-9-_ ]/g, "").slice(0, 60) ||
+      meeting.id;
     const basePath = `${this.pathPrefix}/${dateFolder}-${safeTitle}/`;
 
-    await this.putFile(`${basePath}report.md`, markdownContent, `sync report: ${meeting.title}`);
-    await this.putFile(`${basePath}transcript.txt`, meeting.plainTranscript, `sync transcript: ${meeting.title}`);
-    await this.putFile(`${basePath}meeting.json`, JSON.stringify(meeting, null, 2), `sync raw data: ${meeting.title}`);
+    await this.putFile(
+      `${basePath}report.md`,
+      markdownContent,
+      `sync report: ${meeting.title}`,
+    );
+    await this.putFile(
+      `${basePath}transcript.txt`,
+      meeting.plainTranscript,
+      `sync transcript: ${meeting.title}`,
+    );
+    await this.putFile(
+      `${basePath}meeting.json`,
+      JSON.stringify(meeting, null, 2),
+      `sync raw data: ${meeting.title}`,
+    );
   }
 }

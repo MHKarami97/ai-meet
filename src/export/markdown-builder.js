@@ -75,7 +75,7 @@ export class MeetingReportMarkdownBuilder {
 
       if (r.sentimentBySpeaker?.length) {
         parts.push('## تحلیل احساسات به‌تفکیک گوینده');
-        r.sentimentBySpeaker.forEach((s) => parts.push(`- ${s.speaker}: ${s.sentiment}${s.note ? ` — ${s.note}` : ''}`));
+        r.sentimentBySpeaker.forEach((s) => parts.push(`- ${s.speaker}: ${s.sentiment}${s.note ? ` - ${s.note}` : ''}`));
         parts.push('');
       }
 
@@ -130,7 +130,7 @@ export class MeetingReportMarkdownBuilder {
     parts.push('```');
     parts.push('');
     parts.push('---');
-    parts.push('ساخته‌شده با AI Meet — mhkarami97.ir');
+    parts.push('ساخته‌شده با AI Meet - mhkarami97.ir');
 
     return parts.join('\n');
   }

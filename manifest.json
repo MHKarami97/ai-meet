@@ -2,10 +2,19 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "AI Meet",
-  "version": "0.2.0",
-  "default_locale": "en",
+  "version": "1.0.0",
+  "default_locale": "fa",
   "description": "__MSG_extDescription__",
-  "permissions": ["storage", "unlimitedStorage", "sidePanel", "activeTab", "scripting", "alarms", "downloads", "clipboardWrite"],
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "alarms",
+    "downloads",
+    "clipboardWrite"
+  ],
   "host_permissions": [
     "https://meet.google.com/*",
     "https://generativelanguage.googleapis.com/*",
@@ -14,13 +23,27 @@
     "https://api.anthropic.com/*",
     "https://api.github.com/*"
   ],
-  "background": {"service_worker": "src/background/service-worker.js", "type": "module"},
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
   "content_scripts": [
-    {"matches": ["https://meet.google.com/*"], "js": ["src/content/meet-capture.js"], "css": ["src/content/meet-capture.css"], "run_at": "document_idle"}
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["src/content/meet-capture.js"],
+      "css": ["src/content/meet-capture.css"],
+      "run_at": "document_idle"
+    }
   ],
-  "side_panel": {"default_path": "src/ui/sidepanel.html"},
+  "side_panel": { "default_path": "src/ui/sidepanel.html" },
   "options_page": "src/ui/options.html",
-  "action": {"default_title": "AI Meet", "default_icon": {"48": "icons/icon-48.png", "96": "icons/icon-96.png"}},
+  "action": {
+    "default_title": "AI Meet",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
+  },
   "icons": {
     "48": "icons/icon-48.png",
     "72": "icons/icon-72.png",
@@ -29,5 +52,7 @@
     "192": "icons/icon-192.png",
     "512": "icons/icon-512.png"
   },
-  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com"}
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com"
+  }
 }

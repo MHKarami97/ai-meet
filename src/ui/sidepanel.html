@@ -1,47 +1,51 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
+
 <head>
-<meta charset="utf-8">
-<title>AI Meet</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="sidepanel.css">
+  <meta charset="utf-8">
+  <title>AI Meet</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="sidepanel.css">
 </head>
+
 <body>
-<div class="app">
-  <header class="app-header">
-    <div class="brand"><span class="logo-dot"></span> AI Meet</div>
-    <button id="openOptionsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
-  </header>
-  <div class="search-row">
-    <input id="searchInput" type="text" placeholder="جستوجو در تاریخچه جلسات...">
-  </div>
-  <div class="layout">
-    <aside class="meeting-list" id="meetingList"></aside>
-    <main class="meeting-detail" id="meetingDetail">
-      <div class="empty-state">هنوز جلسه‌ای ثبت نشده. وارد Google Meet شوید تا ضبط رونوشت خودکار شروع شود.</div>
-    </main>
-  </div>
-</div>
-
-<div class="modal-backdrop" id="manualModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>حالت بدون کلید — کپی دستی</h3>
-      <button class="icon-btn" id="closeManualModal">✕</button>
+  <div class="app">
+    <header class="app-header">
+      <div class="brand"><span class="logo-dot"></span> AI Meet</div>
+      <button id="openOptionsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
+    </header>
+    <div class="search-row">
+      <input id="searchInput" type="text" placeholder="جستوجو در تاریخچه جلسات...">
     </div>
-    <p class="hint">۱) متن زیر را کپی کنید. ۲) در هر چت هوش مصنوعی (ChatGPT, Gemini, Claude, ...) بچسبانید و اجرا کنید.
-      ۳) کل پاسخ آن (باید یک JSON باشد) را در کادر پایین بچسبانید و روی «پردازش» بزنید.</p>
-    <label class="modal-label">متن آماده برای هوش مصنوعی</label>
-    <textarea id="manualPromptBox" rows="10" readonly></textarea>
-    <button class="btn btn-secondary" id="copyPromptBtn">📋 کپی متن</button>
-
-    <label class="modal-label" style="margin-top:14px">پاسخ هوش مصنوعی را اینجا بچسبانید</label>
-    <textarea id="manualResultBox" rows="10" placeholder="پاسخ JSON مدل را اینجا paste کنید..."></textarea>
-    <button class="btn btn-primary" id="processManualBtn">پردازش و ساخت گزارش</button>
-    <p id="manualError" class="error-text"></p>
+    <div class="layout">
+      <aside class="meeting-list" id="meetingList"></aside>
+      <main class="meeting-detail" id="meetingDetail">
+        <div class="empty-state">هنوز جلسه‌ای ثبت نشده. وارد Google Meet شوید تا ضبط رونوشت خودکار شروع شود.</div>
+      </main>
+    </div>
   </div>
-</div>
 
-<script type="module" src="sidepanel.js"></script>
+  <div class="modal-backdrop" id="manualModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>حالت بدون کلید - کپی دستی</h3>
+        <button class="icon-btn" id="closeManualModal">✕</button>
+      </div>
+      <p class="hint">۱) متن زیر را کپی کنید. ۲) در هر چت هوش مصنوعی (ChatGPT, Gemini, Claude, ...) بچسبانید و اجرا
+        کنید.
+        ۳) کل پاسخ آن (باید یک JSON باشد) را در کادر پایین بچسبانید و روی «پردازش» بزنید.</p>
+      <label class="modal-label">متن آماده برای هوش مصنوعی</label>
+      <textarea id="manualPromptBox" rows="10" readonly></textarea>
+      <button class="btn btn-secondary" id="copyPromptBtn">📋 کپی متن</button>
+
+      <label class="modal-label" style="margin-top:14px">پاسخ هوش مصنوعی را اینجا بچسبانید</label>
+      <textarea id="manualResultBox" rows="10" placeholder="پاسخ JSON مدل را اینجا paste کنید..."></textarea>
+      <button class="btn btn-primary" id="processManualBtn">پردازش و ساخت گزارش</button>
+      <p id="manualError" class="error-text"></p>
+    </div>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
 </body>
+
 </html>

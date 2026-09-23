@@ -1,9 +1,9 @@
-import { meetingDatabase } from '../db/database.js';
-import { Meeting } from '../db/models.js';
-import { meetingSummarizer } from './summarizer.js';
-import { settingsStore } from './settings-store.js';
-import { GitHubSyncClient } from './github-sync.js';
-import { MeetingReportMarkdownBuilder } from '../export/markdown-builder.js';
+import { meetingDatabase } from "../db/database.js";
+import { Meeting } from "../db/models.js";
+import { meetingSummarizer } from "./summarizer.js";
+import { settingsStore } from "./settings-store.js";
+import { GitHubSyncClient } from "./github-sync.js";
+import { MeetingReportMarkdownBuilder } from "../export/markdown-builder.js";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus?.removeAll?.();
@@ -22,34 +22,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleMessage(message, sender) {
   switch (message.type) {
-    case 'sidepanel:open':
+    case "sidepanel:open":
       // Must run with no preceding await: chrome.sidePanel.open() only
       // works while the triggering click's transient user gesture is
       // still alive, and that gesture does not survive an await.
       if (sender?.tab?.id) chrome.sidePanel.open({ tabId: sender.tab.id });
       return { ok: true };
-    case 'meeting:start':
+    case "meeting:start":
       return onMeetingStart(message.payload);
-    case 'meeting:segment':
+    case "meeting:segment":
       return onMeetingSegment(message.payload);
-    case 'meeting:end':
+    case "meeting:end":
       return onMeetingEnd(message.payload);
-    case 'meeting:generateReport':
+    case "meeting:generateReport":
       return onGenerateReport(message.payload);
-    case 'meeting:buildManualPrompt':
+    case "meeting:buildManualPrompt":
       return onBuildManualPrompt(message.payload);
-    case 'meeting:importManualReport':
+    case "meeting:importManualReport":
       return onImportManualReport(message.payload);
-    case 'meeting:sync':
+    case "meeting:sync":
       return onSyncToGithub(message.payload);
-    case 'meeting:list':
+    case "meeting:list":
       return meetingDatabase.listMeetings();
-    case 'meeting:search':
-      return meetingDatabase.searchMeetings(message.payload?.query || '');
-    case 'meeting:get':
+    case "meeting:search":
+      return meetingDatabase.searchMeetings(message.payload?.query || "");
+    case "meeting:get":
       return meetingDatabase.getMeeting(message.payload.id);
-    case 'meeting:delete':
-      return meetingDatabase.deleteMeeting(message.payload.id).then(() => ({ ok: true }));
+    case "meeting:delete":
+      return meetingDatabase
+        .deleteMeeting(message.payload.id)
+        .then(() => ({ ok: true }));
     default:
       throw new Error(`Unknown message type: ${message.type}`);
   }
@@ -58,19 +60,24 @@ async function handleMessage(message, sender) {
 async function onMeetingStart({ meetUrl, language }) {
   const settings = await settingsStore.getAll();
   const meeting = new Meeting({
-    title: `جلسه ${new Date().toLocaleString('fa-IR')}`,
+    title: `جلسه ${new Date().toLocaleString("fa-IR")}`,
     meetUrl,
     startedAt: new Date().toISOString(),
-    language: language || settings.defaultLanguage
+    language: language || settings.defaultLanguage,
   });
   await meetingDatabase.saveMeeting(meeting);
-  chrome.runtime.sendMessage({ type: 'meeting:activated', payload: { meetingId: meeting.id } }).catch(() => {});
+  chrome.runtime
+    .sendMessage({
+      type: "meeting:activated",
+      payload: { meetingId: meeting.id },
+    })
+    .catch(() => {});
   return meeting;
 }
 
 async function onMeetingSegment({ meetingId, segment }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
   const existingIndex = meeting.segments.findIndex((s) => s.id === segment.id);
   if (existingIndex >= 0) {
     meeting.segments[existingIndex] = segment;
@@ -83,9 +90,9 @@ async function onMeetingSegment({ meetingId, segment }) {
 
 async function onMeetingEnd({ meetingId, title }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
   meeting.endedAt = new Date().toISOString();
-  meeting.status = 'ended';
+  meeting.status = "ended";
   if (title) meeting.title = title;
   await meetingDatabase.saveMeeting(meeting);
   return meeting;
@@ -93,14 +100,18 @@ async function onMeetingEnd({ meetingId, title }) {
 
 async function onGenerateReport({ meetingId, templateId, providerId }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
-  meeting.status = 'summarizing';
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
+  meeting.status = "summarizing";
   await meetingDatabase.saveMeeting(meeting);
   try {
-    meeting.report = await meetingSummarizer.generateReport(meeting, templateId, providerId);
-    meeting.status = 'summarized';
+    meeting.report = await meetingSummarizer.generateReport(
+      meeting,
+      templateId,
+      providerId,
+    );
+    meeting.status = "summarized";
   } catch (err) {
-    meeting.status = 'failed';
+    meeting.status = "failed";
     await meetingDatabase.saveMeeting(meeting);
     throw err;
   }
@@ -110,25 +121,33 @@ async function onGenerateReport({ meetingId, templateId, providerId }) {
 
 async function onBuildManualPrompt({ meetingId, templateId }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
-  const { template, prompt } = await meetingSummarizer.buildManualPrompt(meeting, templateId);
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
+  const { template, prompt } = await meetingSummarizer.buildManualPrompt(
+    meeting,
+    templateId,
+  );
   return { templateId: template.id, templateName: template.name, prompt };
 }
 
 async function onImportManualReport({ meetingId, templateId, rawText }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
-  meeting.report = await meetingSummarizer.importManualReport(meeting, templateId, rawText);
-  meeting.status = 'summarized';
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
+  meeting.report = await meetingSummarizer.importManualReport(
+    meeting,
+    templateId,
+    rawText,
+  );
+  meeting.status = "summarized";
   await meetingDatabase.saveMeeting(meeting);
   return meeting;
 }
 
 async function onSyncToGithub({ meetingId }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
-  if (!meeting) throw new Error('جلسه پیدا نشد.');
+  if (!meeting) throw new Error("جلسه پیدا نشد.");
   const settings = await settingsStore.getAll();
-  if (!settings.github?.enabled) throw new Error('همگام‌سازی با GitHub در تنظیمات فعال نیست.');
+  if (!settings.github?.enabled)
+    throw new Error("همگام‌سازی با GitHub در تنظیمات فعال نیست.");
 
   const client = new GitHubSyncClient(settings.github);
   const markdown = new MeetingReportMarkdownBuilder(meeting).build();

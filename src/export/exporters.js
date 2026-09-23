@@ -10,7 +10,7 @@ function escapeHtml(str) {
 
 function participationListHtml(meeting) {
   return meeting.speakerParticipation
-    .map((p) => `<li>${escapeHtml(p.speaker)} — ${p.percentage}%</li>`)
+    .map((p) => `<li>${escapeHtml(p.speaker)} - ${p.percentage}%</li>`)
     .join('');
 }
 
@@ -36,7 +36,7 @@ function extendedAnalysisHtml(meeting) {
   }
 
   if (r.sentimentBySpeaker?.length) {
-    parts.push(`<h2>تحلیل احساسات به‌تفکیک گوینده</h2><ul>${r.sentimentBySpeaker.map((s) => `<li>${escapeHtml(s.speaker)}: ${escapeHtml(s.sentiment)}${s.note ? ` — ${escapeHtml(s.note)}` : ''}</li>`).join('')}</ul>`);
+    parts.push(`<h2>تحلیل احساسات به‌تفکیک گوینده</h2><ul>${r.sentimentBySpeaker.map((s) => `<li>${escapeHtml(s.speaker)}: ${escapeHtml(s.sentiment)}${s.note ? ` - ${escapeHtml(s.note)}` : ''}</li>`).join('')}</ul>`);
   }
 
   if (r.tensionMoments?.length) {
@@ -126,7 +126,7 @@ export class WordExporter extends BaseExporter {
     const r = meeting.report;
     const decisions = (r?.keyDecisions || []).map((d) => `<li>${escapeHtml(d)}</li>`).join('');
     const actions = (r?.actionItems || [])
-      .map((a) => `<li>${escapeHtml(a.description)} — ${escapeHtml(a.owner || 'نامشخص')}</li>`)
+      .map((a) => `<li>${escapeHtml(a.description)} - ${escapeHtml(a.owner || 'نامشخص')}</li>`)
       .join('');
     const questions = (r?.openQuestions || []).map((q) => `<li>${escapeHtml(q)}</li>`).join('');
     const risks = (r?.risks || []).map((rk) => `<li>${escapeHtml(rk)}</li>`).join('');
@@ -135,7 +135,7 @@ export class WordExporter extends BaseExporter {
       .join('');
 
     return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="utf-8"><title>${escapeHtml(meeting.title)} — mhkarami97.ir</title></head>
+<head><meta charset="utf-8"><title>${escapeHtml(meeting.title)} - mhkarami97.ir</title></head>
 <body dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif">
 <h1>${escapeHtml(meeting.title)}</h1>
 <h2>درصد مشارکت افراد</h2><ul>${participationListHtml(meeting)}</ul>
@@ -146,7 +146,7 @@ ${extendedAnalysisHtml(meeting)}
 <h2>سوالات باز</h2><ul>${questions}</ul>
 <h2>ریسک‌ها</h2><ul>${risks}</ul>
 <h2>متن کامل جلسه</h2>${segments}
-<hr><p style="font-size:11px;color:#888">ساخته‌شده با AI Meet — mhkarami97.ir</p>
+<hr><p style="font-size:11px;color:#888">ساخته‌شده با AI Meet - mhkarami97.ir</p>
 </body></html>`;
   }
 }
@@ -159,7 +159,7 @@ export class PdfExporter extends BaseExporter {
     const printWindow = window.open(blobUrl, '_blank');
     if (!printWindow) return;
     printWindow.addEventListener('load', () => {
-      printWindow.document.title = `mhkarami97.ir — ${meeting.title}`;
+      printWindow.document.title = `mhkarami97.ir - ${meeting.title}`;
       printWindow.focus();
       printWindow.print();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
@@ -181,7 +181,7 @@ body{font-family:Vazirmatn,Tahoma,sans-serif;padding:32px;line-height:1.8}
 h1{color:#4c1d95}h2{color:#2563eb;border-bottom:1px solid #eee;padding-bottom:4px}
 .site-footer{margin-top:24px;padding-top:8px;border-top:1px solid #eee;font-size:11px;color:#888;text-align:center}
 </style>
-<title>mhkarami97.ir — ${escapeHtml(meeting.title)}</title></head>
+<title>mhkarami97.ir - ${escapeHtml(meeting.title)}</title></head>
 <body>
 <h1>${escapeHtml(meeting.title)}</h1>
 <h2>درصد مشارکت افراد</h2><ul>${participationListHtml(meeting)}</ul>
@@ -190,7 +190,7 @@ ${extendedAnalysisHtml(meeting)}
 <h2>تصمیمات</h2><ul>${decisions}</ul>
 <h2>اقدامات</h2><ul>${actions}</ul>
 <h2>متن کامل جلسه</h2><div>${segments}</div>
-<div class="site-footer">ساخته‌شده با AI Meet — mhkarami97.ir</div>
+<div class="site-footer">ساخته‌شده با AI Meet - mhkarami97.ir</div>
 </body></html>`;
   }
 }

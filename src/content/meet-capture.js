@@ -29,19 +29,23 @@ const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
   '[jscontroller="KPn5nb"]',
   'div[aria-label="Captions"]',
-  'div[aria-label*="caption" i]'
+  'div[aria-label*="caption" i]',
 ];
 const PERSIAN_RANGE = /[\u0600-\u06FF]/;
 const NON_CAPTION_TEXT_BLOCKLIST = [
-  'jump to bottom',
-  'پرش به پایین',
-  'پرش به انتها',
-  'turn on captions',
-  'turn off captions'
+  "jump to bottom",
+  "پرش به پایین",
+  "پرش به انتها",
+  "turn on captions",
+  "turn off captions",
 ];
-const CAPTION_TOGGLE_KEYWORDS = ['caption', 'زیرنویس'];
-const CAPTION_LANGUAGE_KEYWORDS = ['caption language', 'زبان زیرنویس'];
-const LANGUAGE_DISPLAY_NAMES = { fa: ['فارسی', 'Persian', 'Farsi'], en: ['English'], ar: ['العربیة', 'Arabic'] };
+const CAPTION_TOGGLE_KEYWORDS = ["caption", "زیرنویس"];
+const CAPTION_LANGUAGE_KEYWORDS = ["caption language", "زبان زیرنویس"];
+const LANGUAGE_DISPLAY_NAMES = {
+  fa: ["فارسی", "Persian", "Farsi"],
+  en: ["English"],
+  ar: ["العربیة", "Arabic"],
+};
 
 function isRealCaptionLine(el) {
   if (el.children.length > 0) return false;
@@ -64,8 +68,12 @@ function findSpeakerForLine(container, lineEl) {
   if (!block || block === container) return null;
 
   const lineText = lineEl.textContent.trim();
-  const leaves = Array.from(block.querySelectorAll('div, span')).filter(isRealCaptionLine);
-  const nameEl = leaves.find((el) => el !== lineEl && el.textContent.trim() !== lineText);
+  const leaves = Array.from(block.querySelectorAll("div, span")).filter(
+    isRealCaptionLine,
+  );
+  const nameEl = leaves.find(
+    (el) => el !== lineEl && el.textContent.trim() !== lineText,
+  );
   return nameEl?.textContent?.trim() || null;
 }
 
@@ -74,9 +82,9 @@ function isCaptionsPanelVisible() {
 }
 
 function findButtonByLabelKeywords(keywords) {
-  const buttons = Array.from(document.querySelectorAll('button[aria-label]'));
+  const buttons = Array.from(document.querySelectorAll("button[aria-label]"));
   return buttons.find((b) => {
-    const label = b.getAttribute('aria-label').toLowerCase();
+    const label = b.getAttribute("aria-label").toLowerCase();
     return keywords.some((k) => label.includes(k.toLowerCase()));
   });
 }
@@ -103,7 +111,7 @@ function disableCaptions() {
 /**
  * EXPERIMENTAL / best-effort. Tries to open Meet's caption-language picker
  * and select the language configured in AI Meet's settings. Any missing
- * element aborts silently — this must never block or break caption capture.
+ * element aborts silently - this must never block or break caption capture.
  */
 async function trySetCaptionLanguage(languageCode) {
   const wantedNames = LANGUAGE_DISPLAY_NAMES[languageCode];
@@ -118,13 +126,19 @@ async function trySetCaptionLanguage(languageCode) {
     await sleep(400);
     const menu = document.querySelector('[role="listbox"], [role="menu"]');
     if (!menu) return;
-    const options = Array.from(menu.querySelectorAll('[role="option"], [role="menuitemradio"], [role="menuitem"]'));
-    const match = options.find((opt) => wantedNames.some((name) => opt.textContent.trim().includes(name)));
+    const options = Array.from(
+      menu.querySelectorAll(
+        '[role="option"], [role="menuitemradio"], [role="menuitem"]',
+      ),
+    );
+    const match = options.find((opt) =>
+      wantedNames.some((name) => opt.textContent.trim().includes(name)),
+    );
     if (!match) return;
     match.click();
 
     await sleep(300);
-    const applyBtn = findButtonByLabelKeywords(['apply', 'اعمال']);
+    const applyBtn = findButtonByLabelKeywords(["apply", "اعمال"]);
     applyBtn?.click();
   } catch {
     // Silently ignored: this feature is best-effort only.
@@ -136,8 +150,8 @@ class MeetCaptionCapture {
     this.meetingId = null;
     this.observer = null;
     this.rootObserver = null;
-    this.lastLineText = '';
-    this.lastSpeaker = 'ناشناس';
+    this.lastLineText = "";
+    this.lastSpeaker = "ناشناس";
     this.currentSegmentId = null;
     this.badgeEl = null;
     this.isRecording = false;
@@ -150,18 +164,19 @@ class MeetCaptionCapture {
   async start() {
     if (this.isRecording) return;
     const settings = await this.getSettings();
-    const meeting = await this.sendMessage('meeting:start', {
+    const meeting = await this.sendMessage("meeting:start", {
       meetUrl: location.href,
-      language: settings.languageMode === 'manual' ? settings.defaultLanguage : 'auto'
+      language:
+        settings.languageMode === "manual" ? settings.defaultLanguage : "auto",
     });
     this.meetingId = meeting.id;
     this.isRecording = true;
-    this.lastLineText = '';
+    this.lastLineText = "";
     this.currentSegmentId = null;
     this.updateBadge();
 
     enableCaptions();
-    if (settings.languageMode === 'manual') {
+    if (settings.languageMode === "manual") {
       trySetCaptionLanguage(settings.defaultLanguage);
     }
 
@@ -176,7 +191,8 @@ class MeetCaptionCapture {
     this.currentSegmentId = null;
     this.updateBadge();
     disableCaptions();
-    if (this.meetingId) await this.sendMessage('meeting:end', { meetingId: this.meetingId });
+    if (this.meetingId)
+      await this.sendMessage("meeting:end", { meetingId: this.meetingId });
   }
 
   toggle() {
@@ -186,10 +202,18 @@ class MeetCaptionCapture {
 
   attachObserver() {
     const tryAttach = () => {
-      const container = CAPTION_CONTAINER_SELECTORS.map((sel) => document.querySelector(sel)).find(Boolean);
+      const container = CAPTION_CONTAINER_SELECTORS.map((sel) =>
+        document.querySelector(sel),
+      ).find(Boolean);
       if (!container) return false;
-      this.observer = new MutationObserver(() => this.onCaptionsMutated(container));
-      this.observer.observe(container, { childList: true, subtree: true, characterData: true });
+      this.observer = new MutationObserver(() =>
+        this.onCaptionsMutated(container),
+      );
+      this.observer.observe(container, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
       return true;
     };
 
@@ -198,12 +222,17 @@ class MeetCaptionCapture {
     this.rootObserver = new MutationObserver(() => {
       if (tryAttach()) this.rootObserver.disconnect();
     });
-    this.rootObserver.observe(document.body, { childList: true, subtree: true });
+    this.rootObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   onCaptionsMutated(container) {
     if (!this.isRecording) return;
-    const lines = Array.from(container.querySelectorAll('div, span')).filter(isRealCaptionLine);
+    const lines = Array.from(container.querySelectorAll("div, span")).filter(
+      isRealCaptionLine,
+    );
     if (lines.length === 0) return;
 
     const lastEl = lines[lines.length - 1];
@@ -226,45 +255,46 @@ class MeetCaptionCapture {
     this.lastLineText = text;
     this.lastSpeaker = speaker;
 
-    const language = PERSIAN_RANGE.test(text) ? 'fa' : 'en';
-    this.sendMessage('meeting:segment', {
+    const language = PERSIAN_RANGE.test(text) ? "fa" : "en";
+    this.sendMessage("meeting:segment", {
       meetingId: this.meetingId,
       segment: {
         id: this.currentSegmentId,
         speaker,
         text,
         timestampMs: Date.now(),
-        language
-      }
+        language,
+      },
     });
   }
 
   renderBadge() {
-    this.badgeEl = document.createElement('button');
-    this.badgeEl.type = 'button';
-    this.badgeEl.className = 'ai-meet-badge stopped';
-    this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet — برای شروع ضبط کلیک کنید</span>';
-    this.badgeEl.addEventListener('click', () => {
+    this.badgeEl = document.createElement("button");
+    this.badgeEl.type = "button";
+    this.badgeEl.className = "ai-meet-badge stopped";
+    this.badgeEl.innerHTML =
+      '<span class="dot"></span><span>AI Meet - برای شروع ضبط کلیک کنید</span>';
+    this.badgeEl.addEventListener("click", () => {
       if (!this.isRecording) {
-        chrome.runtime.sendMessage({ type: 'sidepanel:open' }).catch(() => {});
+        chrome.runtime.sendMessage({ type: "sidepanel:open" }).catch(() => {});
       }
       this.toggle();
     });
     document.body.appendChild(this.badgeEl);
-    window.addEventListener('beforeunload', () => this.stop());
+    window.addEventListener("beforeunload", () => this.stop());
   }
 
   updateBadge() {
     if (!this.badgeEl) return;
-    this.badgeEl.classList.toggle('stopped', !this.isRecording);
+    this.badgeEl.classList.toggle("stopped", !this.isRecording);
     this.badgeEl.innerHTML = this.isRecording
-      ? '<span class="dot"></span><span>AI Meet در حال ضبط — کلیک برای پایان</span>'
-      : '<span class="dot"></span><span>AI Meet — برای شروع ضبط کلیک کنید</span>';
+      ? '<span class="dot"></span><span>AI Meet در حال ضبط - کلیک برای پایان</span>'
+      : '<span class="dot"></span><span>AI Meet - برای شروع ضبط کلیک کنید</span>';
   }
 
   async getSettings() {
-    const stored = await chrome.storage.local.get('settings');
-    return stored.settings || { languageMode: 'auto', defaultLanguage: 'fa' };
+    const stored = await chrome.storage.local.get("settings");
+    return stored.settings || { languageMode: "auto", defaultLanguage: "fa" };
   }
 
   sendMessage(type, payload) {
@@ -276,7 +306,9 @@ const capture = new MeetCaptionCapture();
 
 function waitForMeetingUiThenInit() {
   const readyCheck = setInterval(() => {
-    const inMeeting = document.querySelector('[data-meeting-title], [jsname="HlFzId"]');
+    const inMeeting = document.querySelector(
+      '[data-meeting-title], [jsname="HlFzId"]',
+    );
     if (inMeeting) {
       clearInterval(readyCheck);
       capture.init();

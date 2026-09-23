@@ -5,7 +5,7 @@
  * @see https://refactoring.guru/design-patterns/strategy
  */
 export class AiProvider {
-  constructor({ id, name, apiKey = '', baseUrl = '', model = '' } = {}) {
+  constructor({ id, name, apiKey = "", baseUrl = "", model = "" } = {}) {
     this.id = id;
     this.name = name;
     this.apiKey = apiKey;
@@ -15,7 +15,7 @@ export class AiProvider {
 
   // eslint-disable-next-line no-unused-vars
   async complete(prompt) {
-    throw new Error('complete() must be implemented by subclass');
+    throw new Error("complete() must be implemented by subclass");
   }
 }
 
@@ -24,6 +24,8 @@ export class ManualProviderMarker extends AiProvider {
   isManual = true;
 
   async complete() {
-    throw new Error('Manual provider cannot call complete() directly. Use MeetingSummarizer.buildManualPrompt instead.');
+    throw new Error(
+      "Manual provider cannot call complete() directly. Use MeetingSummarizer.buildManualPrompt instead.",
+    );
   }
 }

@@ -1,18 +1,18 @@
 # AI Meet
 
-افزونه مرورگر (Chrome / Edge — Manifest V3) برای ضبط، رونوشت‌برداری و خلاصه‌سازی هوشمند جلسات Google Meet با پشتیبانی کامل زبان فارسی. کاملاً سمت کلاینت اجرا می‌شود؛ هیچ سروری لازم نیست.
+افزونه مرورگر (Chrome / Edge - Manifest V3) برای ضبط، رونوشت‌برداری و خلاصه‌سازی هوشمند جلسات Google Meet با پشتیبانی کامل زبان فارسی. کاملاً سمت کلاینت اجرا می‌شود؛ هیچ سروری لازم نیست.
 
 ## امکانات
 
 - شروع/پایان ضبط با یک دکمه‌ی شناور روی صفحه Meet (کاملاً دستی، نه خودکار)
 - خواندن زیرنویس زنده‌ی خود Google Meet (فارسی/انگلیسی/...) با گوینده + تایم‌استم، و تشخیص صحیح ادامه‌ی جمله (بدون تکرار خطوط رشد‌کننده)
 - ذخیره کامل تاریخچه جلسات در IndexedDB (بدون محدودیت حجمی chrome.storage)
-- خلاصه، تصمیمات، اقدامات، سوالات باز، ریسک‌ها — به‌صورت ساختاریافته
+- خلاصه، تصمیمات، اقدامات، سوالات باز، ریسک‌ها - به‌صورت ساختاریافته
 - **درصد مشارکت هر فرد** در جلسه (بر اساس حجم متن گفته‌شده)
 - ۱۲ قالب پرامپت آماده + امکان افزودن قالب اختصاصی
 - چند Provider هوش مصنوعی هم‌زمان: Gemini مستقیم، Gemini از طریق Cloudflare AI Gateway، هر سرور هم‌سازگار با OpenAI (از جمله Ollama خودمیزبان)
 - **حالت بدون کلید (کپی دستی):** بدون کلید API، متن آماده برای هر چت هوش مصنوعی می‌سازد و پاسخ JSON را در همان افزونه پردازش می‌کند
-- خروجی PDF، Word (.doc)، TXT و Markdown — کاملاً آفلاین
+- خروجی PDF، Word (.doc)، TXT و Markdown - کاملاً آفلاین
 - همگام‌سازی اختیاری با GitHub
 - ظاهر مدرن با فونت Vazirmatn، راست‌به‌چپ کامل، و اسکرول‌بار سفارشی
 
@@ -34,7 +34,7 @@
 src/
   ai/            Strategy زبانی: providers.js + prompt-templates.js
   background/    service-worker.js (Router) + summarizer.js (Template Method) + settings-store.js + github-sync.js
-  content/       meet-capture.js — خواندن caption از DOM صفحه Meet + دکمه شروع/پایان
+  content/       meet-capture.js - خواندن caption از DOM صفحه Meet + دکمه شروع/پایان
   db/            models.js (شامل speakerParticipation) + database.js (Repository روی IndexedDB)
   export/        exporters.js (Strategy) + markdown-builder.js (Builder)
   ui/            sidepanel + options (رابط کاربری)

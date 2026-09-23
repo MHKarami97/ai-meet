@@ -1,7 +1,7 @@
-import { AiProvider, ManualProviderMarker } from './provider-interface.js';
+import { AiProvider, ManualProviderMarker } from "./provider-interface.js";
 
 function extractGeminiText(json) {
-  return json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  return json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 /**
@@ -10,17 +10,21 @@ function extractGeminiText(json) {
  */
 export class GeminiProvider extends AiProvider {
   async complete(prompt) {
-    const model = this.model || 'gemini-2.5-flash';
+    const model = this.model || "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
     const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
-      })
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        },
+      }),
     });
-    if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
     return extractGeminiText(await res.json());
   }
 }
@@ -38,17 +42,23 @@ export class CloudflareGatewayGeminiProvider extends AiProvider {
   }
 
   async complete(prompt) {
-    const model = this.model || 'gemini-2.5-flash';
+    const model = this.model || "gemini-2.5-flash";
     const url = `https://gateway.ai.cloudflare.com/v1/${this.accountId}/${this.gatewayId}/google-ai-studio/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
     const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
-      })
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+        },
+      }),
     });
-    if (!res.ok) throw new Error(`Cloudflare AI Gateway error ${res.status}: ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(
+        `Cloudflare AI Gateway error ${res.status}: ${await res.text()}`,
+      );
     return extractGeminiText(await res.json());
   }
 }
@@ -59,23 +69,29 @@ export class CloudflareGatewayGeminiProvider extends AiProvider {
  */
 export class OpenAiCompatibleProvider extends AiProvider {
   async complete(prompt) {
-    const base = (this.baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const base = (this.baseUrl || "https://api.openai.com/v1").replace(
+      /\/$/,
+      "",
+    );
     const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {})
+        "Content-Type": "application/json",
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
       },
       body: JSON.stringify({
-        model: this.model || 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
+        model: this.model || "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
-        response_format: { type: 'json_object' }
-      })
+        response_format: { type: "json_object" },
+      }),
     });
-    if (!res.ok) throw new Error(`OpenAI-compatible API error ${res.status}: ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(
+        `OpenAI-compatible API error ${res.status}: ${await res.text()}`,
+      );
     const json = await res.json();
-    return json?.choices?.[0]?.message?.content ?? '';
+    return json?.choices?.[0]?.message?.content ?? "";
   }
 }
 
@@ -87,10 +103,10 @@ export class OpenAiCompatibleProvider extends AiProvider {
 export class ManualCopyPasteProvider extends ManualProviderMarker {}
 
 export const PROVIDER_TYPES = Object.freeze({
-  GEMINI: 'gemini',
-  CLOUDFLARE_GEMINI: 'cloudflare-gemini',
-  OPENAI_COMPATIBLE: 'openai-compatible',
-  MANUAL: 'manual'
+  GEMINI: "gemini",
+  CLOUDFLARE_GEMINI: "cloudflare-gemini",
+  OPENAI_COMPATIBLE: "openai-compatible",
+  MANUAL: "manual",
 });
 
 /** Factory Pattern: turns a stored provider profile into a live strategy instance. */
