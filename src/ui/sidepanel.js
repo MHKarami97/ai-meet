@@ -232,15 +232,6 @@ class SidePanelApp {
     }
   }
 
-  /**
-   * Builds the HTML for the active tab, swaps it in, then re-triggers the
-   * `.tab-anim` CSS animation (fade + slight slide) so switching tabs never
-   * feels like an instant snap. For the transcript tab specifically, while
-   * the meeting is still recording AND the user has not paused auto-scroll
-   * (via the small toggle button at the bottom-left), the outer scroll
-   * container is pushed to the bottom whenever this is called (now driven
-   * by real-time segment pushes instead of a periodic poll).
-   */
   renderTabContent(meeting) {
     const el = document.getElementById("tabContent");
     const scrollContainer = document.getElementById("meetingDetail");
@@ -259,19 +250,7 @@ class SidePanelApp {
           .join("") || "<p>اقدامی ثبت نشده.</p>"
       }</div>`;
     } else if (this.activeTab === "participation") {
-      const participation = meeting.speakerParticipation;
-      html = `<div class="card">${
-        participation.length
-          ? participation
-              .map(
-                (p) => `<div class="participation-row">
-                  <div class="participation-label"><span>${this.esc(p.speaker)}</span><span>${p.percentage}%</span></div>
-                  <div class="participation-bar"><div class="participation-fill" style="width:${p.percentage}%"></div></div>
-                </div>`,
-              )
-              .join("")
-          : "<p>هنوز داده‌ای برای محاسبه مشارکت ثبت نشده.</p>"
-      }</div>`;
+      html = this.renderParticipationTab(meeting);
     } else if (this.activeTab === "analysis") {
       html = this.renderAnalysisTab(r);
     } else {
@@ -287,12 +266,24 @@ class SidePanelApp {
 
     el.innerHTML = html;
 
-    // Restart the CSS animation on every tab switch/refresh (removing then
-    // re-adding the class with a forced reflow in between is required —
-    // browsers won't replay an animation if the class never actually left).
     el.classList.remove("tab-anim");
     void el.offsetWidth;
     el.classList.add("tab-anim");
+
+    // The bar widths are set here via the CSSOM (element.style.width), not
+    // via a string-interpolated inline "style" attribute in the HTML above.
+    // This guarantees a clean, clamped numeric value reaches the box model
+    // regardless of any HTML-parsing/formatting edge case, and is what
+    // actually fixed bars rendering at 100% width for every speaker.
+    if (this.activeTab === "participation") {
+      el.querySelectorAll(".participation-fill").forEach((fillEl) => {
+        const raw = parseFloat(fillEl.dataset.pct);
+        const clamped = Number.isFinite(raw)
+          ? Math.min(100, Math.max(0, raw))
+          : 0;
+        fillEl.style.width = `${clamped}%`;
+      });
+    }
 
     if (
       this.activeTab === "transcript" &&
@@ -304,6 +295,21 @@ class SidePanelApp {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       });
     }
+  }
+
+  renderParticipationTab(meeting) {
+    const participation = meeting.speakerParticipation;
+    if (!participation.length) {
+      return '<div class="card"><p>هنوز داده‌ای برای محاسبه مشارکت ثبت نشده.</p></div>';
+    }
+    return `<div class="card">${participation
+      .map(
+        (p) => `<div class="participation-row">
+          <div class="participation-label"><span>${this.esc(p.speaker)}</span><span>${p.percentage}%</span></div>
+          <div class="participation-bar"><div class="participation-fill" data-pct="${p.percentage}"></div></div>
+        </div>`,
+      )
+      .join("")}</div>`;
   }
 
   renderSummaryTab(r) {
