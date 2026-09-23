@@ -179,9 +179,14 @@ body {
 }
 .actions-row {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.btn-row {
+  display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
   align-items: center;
 }
 .btn {
@@ -208,6 +213,10 @@ body {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.btn.small-btn {
+  padding: 6px 10px;
+  font-size: 10px;
 }
 
 select {
@@ -499,7 +508,4 @@ select option {
   font-size: 12px;
   color: var(--muted);
   line-height: 1.8;
-}
-.small-btn {
-  font-size: 10px;
 }

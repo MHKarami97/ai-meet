@@ -135,12 +135,16 @@ class SidePanelApp {
       </div>
       <div class="actions-row">
         <select id="templateSelect">${templateOptions}</select>
-        <button class="btn btn-primary" id="generateBtn">${meeting.report ? "🔁 بازسازی گزارش" : isManualProvider ? "📋 ساخت متن برای AI" : "✨ ساخت گزارش با AI"}</button>
-        <button class="btn btn-secondary" id="syncBtn">☁️ همگام‌سازی با GitHub</button>
-        <button class="btn btn-secondary small-btn" data-export="doc">⬇ Word</button>
-        <button class="btn btn-secondary small-btn" data-export="pdf">⬇ PDF</button>
-        <button class="btn btn-secondary small-btn" data-export="txt">⬇ TXT</button>
-        <button class="btn btn-secondary small-btn" data-export="md">⬇ Markdown</button>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="generateBtn">${meeting.report ? "🔁 بازسازی گزارش" : isManualProvider ? "📋 ساخت متن برای AI" : "✨ ساخت گزارش با AI"}</button>
+          <button class="btn btn-secondary" id="syncBtn">☁️ همگام‌سازی با GitHub</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary small-btn" data-export="doc">⬇ Word</button>
+          <button class="btn btn-secondary small-btn" data-export="pdf">⬇ PDF</button>
+          <button class="btn btn-secondary small-btn" data-export="txt">⬇ TXT</button>
+          <button class="btn btn-secondary small-btn" data-export="md">⬇ Markdown</button>
+        </div>
       </div>
       <div class="tabs">
         <button class="tab-btn ${this.activeTab === "transcript" ? "active" : ""}" data-tab="transcript">متن کامل</button>
@@ -196,7 +200,7 @@ class SidePanelApp {
         (r?.actionItems || [])
           .map(
             (a) =>
-              `<div class="action-item"><input type="checkbox" ${a.done ? "checked" : ""} disabled><div>${this.esc(a.description)}<small>مسئول: ${this.esc(a.owner || "نامشخص")} — موعد: ${this.esc(a.dueDate || "نامشخص")}</small></div></div>`,
+              `<div class="action-item"><input type="checkbox" ${a.done ? "checked" : ""} disabled><div>${this.esc(a.description)}<small>مسئول: ${this.esc(a.owner || "نامشخص")} - موعد: ${this.esc(a.dueDate || "نامشخص")}</small></div></div>`,
           )
           .join("") || "<p>اقدامی ثبت نشده.</p>"
       }</div>`;
@@ -272,7 +276,7 @@ class SidePanelApp {
 
   renderAnalysisTab(r) {
     if (!r)
-      return '<div class="card"><p>هنوز گزارشی ساخته نشده — این بخش بعد از «ساخت گزارش با AI» پر می‌شود.</p></div>';
+      return '<div class="card"><p>هنوز گزارشی ساخته نشده - این بخش بعد از «ساخت گزارش با AI» پر می‌شود.</p></div>';
 
     const e = r.effectivenessScore;
     const hasScore = e && e.score !== null && e.score !== undefined;
@@ -303,7 +307,7 @@ class SidePanelApp {
       ? `<div class="card"><h3>تحلیل احساسات به‌تفکیک گوینده</h3><ul>${r.sentimentBySpeaker
           .map(
             (s) =>
-              `<li>${this.esc(s.speaker)} — ${this.esc(s.sentiment)}${s.note ? ` — ${this.esc(s.note)}` : ""}</li>`,
+              `<li>${this.esc(s.speaker)} - ${this.esc(s.sentiment)}${s.note ? ` - ${this.esc(s.note)}` : ""}</li>`,
           )
           .join("")}</ul></div>`
       : "";
@@ -312,7 +316,7 @@ class SidePanelApp {
       ? `<div class="card"><h3>لحظات تنش‌دار</h3><ul>${r.tensionMoments
           .map(
             (t) =>
-              `<li><b>${this.esc(t.context)}</b> — ${this.esc(t.description)}</li>`,
+              `<li><b>${this.esc(t.context)}</b> - ${this.esc(t.description)}</li>`,
           )
           .join("")}</ul></div>`
       : "";
