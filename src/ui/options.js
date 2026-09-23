@@ -7,7 +7,7 @@ const PROVIDER_TYPE_LABELS = {
   [PROVIDER_TYPES.GEMINI]: 'Gemini (مستقیم)',
   [PROVIDER_TYPES.CLOUDFLARE_GEMINI]: 'Gemini از طریق Cloudflare AI Gateway',
   [PROVIDER_TYPES.OPENAI_COMPATIBLE]: 'OpenAI یا سرور هم‌سازگار (Ollama و...)',
-  [PROVIDER_TYPES.MANUAL]: 'بدون کلید (کپی دستی در چت هوش مصنوعی)'
+  [PROVIDER_TYPES.MANUAL]: 'کپی دستی در هوش مصنوعی'
 };
 
 class OptionsApp {
@@ -70,7 +70,7 @@ class OptionsApp {
             ${Object.entries(PROVIDER_TYPE_LABELS).map(([val, label]) => `<option value="${val}" ${p.type === val ? 'selected' : ''}>${label}</option>`).join('')}
           </select>
           <label><input type="radio" name="activeProvider" data-field="active" ${this.settings.activeProviderId === p.id ? 'checked' : ''}> فعال</label>
-          <button class="remove-btn" data-action="remove">جذف</button>
+          <button class="remove-btn" data-action="remove">حذف</button>
         </div>
         ${isManual ? '<p class="manual-note">این Provider هیچ کلیدی لازم ندارد. هنگام ساخت گزارش، افزونه یک متن آماده برای کپی به شما می‌دهد تا در هر چت هوش مصنوعی (ChatGPT، Gemini، Claude و...) بچسبانید و پاسخ را برگردانید.</p>' : `
         <div class="row-inline" style="margin-top:8px">
@@ -137,7 +137,7 @@ class OptionsApp {
       card.innerHTML = `
         <div class="row-inline">
           <input type="text" data-field="name" value="${this.esc(t.name)}" placeholder="نام قالب">
-          <button class="remove-btn" data-action="remove">جذف</button>
+          <button class="remove-btn" data-action="remove">حذف</button>
         </div>
         <textarea data-field="systemInstruction" rows="4" style="width:100%;margin-top:8px">${this.esc(t.systemInstruction)}</textarea>
       `;

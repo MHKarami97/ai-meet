@@ -151,7 +151,7 @@ class SidePanelApp {
     } else if (this.activeTab === 'actions') {
       el.innerHTML = `<div class="card">${
         (r?.actionItems || [])
-          .map((a) => `<div class="action-item"><input type="checkbox" ${a.done ? 'checked' : ''} disabled><div>${this.esc(a.description)}<small>مسئول: ${this.esc(a.owner || 'نامشخص')} — موعد: ${this.esc(a.dueDate || 'نامشخص')}</small></div></div>`)
+          .map((a) => `<div class="action-item"><input type="checkbox" ${a.done ? 'checked' : ''} disabled><div>${this.esc(a.description)}<small>مسئول: ${this.esc(a.owner || 'نامشخص')} - موعد: ${this.esc(a.dueDate || 'نامشخص')}</small></div></div>`)
           .join('') || '<p>اقدامی ثبت نشده.</p>'
       }</div>`;
     } else if (this.activeTab === 'participation') {
@@ -199,7 +199,7 @@ class SidePanelApp {
   }
 
   renderAnalysisTab(r) {
-    if (!r) return '<div class="card"><p>هنوز گزارشی ساخته نشده — این بخش بعد از «ساخت گزارش با AI» پر می‌شود.</p></div>';
+    if (!r) return '<div class="card"><p>هنوز گزارشی ساخته نشده - این بخش بعد از «ساخت گزارش با AI» پر می‌شود.</p></div>';
 
     const e = r.effectivenessScore;
     const hasScore = e && e.score !== null && e.score !== undefined;
@@ -225,13 +225,13 @@ class SidePanelApp {
 
     const sentimentCard = r.sentimentBySpeaker?.length
       ? `<div class="card"><h3>تحلیل احساسات به‌تفکیک گوینده</h3><ul>${r.sentimentBySpeaker
-          .map((s) => `<li>${this.esc(s.speaker)} — ${this.esc(s.sentiment)}${s.note ? ` — ${this.esc(s.note)}` : ''}</li>`)
+          .map((s) => `<li>${this.esc(s.speaker)} - ${this.esc(s.sentiment)}${s.note ? ` - ${this.esc(s.note)}` : ''}</li>`)
           .join('')}</ul></div>`
       : '';
 
     const tensionCard = r.tensionMoments?.length
       ? `<div class="card"><h3>لحظات تنش‌دار</h3><ul>${r.tensionMoments
-          .map((t) => `<li><b>${this.esc(t.context)}</b> — ${this.esc(t.description)}</li>`)
+          .map((t) => `<li><b>${this.esc(t.context)}</b> - ${this.esc(t.description)}</li>`)
           .join('')}</ul></div>`
       : '';
 
