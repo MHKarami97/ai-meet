@@ -139,7 +139,7 @@ class SidePanelApp {
     else this.currentMeeting.segments.push(segment);
 
     if (this.activeTab === "transcript") {
-      this.renderTabContent(this.currentMeeting);
+      this.renderTabContent(this.currentMeeting, { animate: false });
     }
   }
 
@@ -231,7 +231,7 @@ class SidePanelApp {
           : "▶ فعال‌سازی اسکرول خودکار";
       });
 
-    this.renderTabContent(meeting);
+    this.renderTabContent(meeting, { animate: true });
     this.startDurationTicker(meeting);
   }
 
@@ -256,7 +256,7 @@ class SidePanelApp {
     }
   }
 
-  renderTabContent(meeting) {
+  renderTabContent(meeting, { animate = true } = {}) {
     const el = document.getElementById("tabContent");
     const scrollContainer = document.getElementById("meetingDetail");
     const autoScrollBtn = document.getElementById("autoScrollToggleBtn");
@@ -291,9 +291,11 @@ class SidePanelApp {
 
     el.innerHTML = html;
 
-    el.classList.remove("tab-anim");
-    void el.offsetWidth;
-    el.classList.add("tab-anim");
+    if (animate) {
+      el.classList.remove("tab-anim");
+      void el.offsetWidth;
+      el.classList.add("tab-anim");
+    }
 
     if (this.activeTab === "participation") {
       el.querySelectorAll(".participation-fill").forEach((fillEl) => {
