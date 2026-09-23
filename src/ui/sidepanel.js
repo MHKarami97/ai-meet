@@ -137,10 +137,10 @@ class SidePanelApp {
         <select id="templateSelect">${templateOptions}</select>
         <button class="btn btn-primary" id="generateBtn">${meeting.report ? "🔁 بازسازی گزارش" : isManualProvider ? "📋 ساخت متن برای AI" : "✨ ساخت گزارش با AI"}</button>
         <button class="btn btn-secondary" id="syncBtn">☁️ همگام‌سازی با GitHub</button>
-        <button class="btn btn-secondary" data-export="doc">⬇ Word</button>
-        <button class="btn btn-secondary" data-export="pdf">⬇ PDF</button>
-        <button class="btn btn-secondary" data-export="txt">⬇ TXT</button>
-        <button class="btn btn-secondary" data-export="md">⬇ Markdown</button>
+        <button class="btn btn-secondary small-btn" data-export="doc">⬇ Word</button>
+        <button class="btn btn-secondary small-btn" data-export="pdf">⬇ PDF</button>
+        <button class="btn btn-secondary small-btn" data-export="txt">⬇ TXT</button>
+        <button class="btn btn-secondary small-btn" data-export="md">⬇ Markdown</button>
       </div>
       <div class="tabs">
         <button class="tab-btn ${this.activeTab === "transcript" ? "active" : ""}" data-tab="transcript">متن کامل</button>

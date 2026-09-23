@@ -118,7 +118,7 @@ body {
   overflow: hidden;
 }
 .meeting-list {
-  width: 220px;
+  width: 180px;
   overflow-y: auto;
   border-left: 1px solid var(--border);
   padding: 8px;
@@ -251,7 +251,7 @@ select option {
   padding: 8px 12px;
   cursor: pointer;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 10px;
   border-bottom: 2px solid transparent;
   transition:
     color 0.15s ease,
@@ -499,4 +499,7 @@ select option {
   font-size: 12px;
   color: var(--muted);
   line-height: 1.8;
+}
+.small-btn {
+  font-size: 10px;
 }
