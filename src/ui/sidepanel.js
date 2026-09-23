@@ -28,6 +28,7 @@ class SidePanelApp {
     this.activeTab = "transcript";
     this.pollTimer = null;
     this.manualContext = null;
+    this.autoScrollEnabled = true;
   }
 
   async init() {
@@ -46,6 +47,9 @@ class SidePanelApp {
     document
       .getElementById("processManualBtn")
       .addEventListener("click", () => this.processManualResult());
+    document
+      .getElementById("autoScrollToggleBtn")
+      .addEventListener("click", () => this.toggleAutoScroll());
 
     chrome.runtime.onMessage.addListener((message) => {
       if (message.type === "meeting:activated" && message.payload?.meetingId) {
@@ -55,6 +59,22 @@ class SidePanelApp {
 
     await this.loadMeetings();
     this.pollTimer = setInterval(() => this.refreshSelected(), 3000);
+  }
+
+  toggleAutoScroll() {
+    this.autoScrollEnabled = !this.autoScrollEnabled;
+    this.updateAutoScrollButton();
+  }
+
+  updateAutoScrollButton() {
+    const btn = document.getElementById("autoScrollToggleBtn");
+    if (!btn) return;
+    const visible = this.activeTab === "transcript";
+    btn.style.display = visible ? "flex" : "none";
+    btn.classList.toggle("off", !this.autoScrollEnabled);
+    btn.textContent = this.autoScrollEnabled
+      ? "⬇ اسکرول خودکار: فعال"
+      : "⏸ اسکرول خودکار: خاموش";
   }
 
   async loadMeetings(search) {
@@ -95,6 +115,7 @@ class SidePanelApp {
   async selectMeeting(id) {
     this.selectedId = id;
     this.activeTab = "transcript";
+    this.autoScrollEnabled = true;
     this.renderList();
     const raw = await chrome.runtime.sendMessage({
       type: "meeting:get",
@@ -107,6 +128,7 @@ class SidePanelApp {
     const root = document.getElementById("meetingDetail");
     if (!meeting) {
       root.innerHTML = '<div class="empty-state">جلسه‌ای انتخاب نشده.</div>';
+      this.updateAutoScrollButton();
       return;
     }
     const settings = await settingsStore.getAll();
@@ -184,8 +206,9 @@ class SidePanelApp {
    * Builds the HTML for the active tab, swaps it in, then re-triggers the
    * `.tab-anim` CSS animation (fade + slight slide) so switching tabs never
    * feels like an instant snap. For the transcript tab specifically, while
-   * the meeting is still recording the outer scroll container is pushed to
-   * the bottom on every refresh so the newest caption line stays in view.
+   * the meeting is still recording AND the user hasn't paused auto-scroll,
+   * the outer scroll container is pushed to the bottom on every refresh so
+   * the newest caption line stays in view.
    */
   renderTabContent(meeting) {
     const el = document.getElementById("tabContent");
@@ -240,9 +263,12 @@ class SidePanelApp {
     void el.offsetWidth;
     el.classList.add("tab-anim");
 
+    this.updateAutoScrollButton();
+
     if (
       this.activeTab === "transcript" &&
       !meeting.endedAt &&
+      this.autoScrollEnabled &&
       scrollContainer
     ) {
       requestAnimationFrame(() => {

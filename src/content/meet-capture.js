@@ -3,27 +3,21 @@
  * the user, or auto-attempted by this script) and streams each finalized
  * line to the background worker with a speaker label and timestamp.
  *
- * On start:
- *   1. Requests the extension side panel to open (must happen synchronously,
- *      before any await, to stay inside Chrome's "user gesture" window —
- *      see https://developer.chrome.com/docs/extensions/reference/api/sidePanel).
- *   2. Clicks Google Meet's own Captions toggle button (best-effort, matched
- *      by aria-label keywords since Meet has no stable public selector).
- *   3. Best-effort attempts to switch the caption language to the one chosen
- *      in AI Meet's settings. This step is experimental: Google Meet's
- *      caption-language menu has no documented selector and its DOM changes
- *      between releases, so this silently no-ops if it can't find the menu.
- *      Setting the language manually once in Meet is the reliable fallback —
- *      Meet remembers it for future meetings.
+ * Google Meet's live ASR does not just append words to the current caption
+ * line - it frequently REVISES the tail of the sentence as more audio
+ * context arrives (e.g. "...ببینیم چه" becomes "...ببینیم چجوری میشه داستان").
+ * Because of that, matching continuations by "new text starts with the old
+ * text" is unreliable and was producing duplicate growing lines. Instead,
+ * continuations are now detected purely by TIME PROXIMITY: as long as the
+ * same speaker keeps updating captions within CONTINUATION_GAP_MS of the
+ * previous update, everything is merged into the same evolving segment.
+ * A new segment only starts when the speaker changes or there is a real
+ * pause longer than the gap.
  *
- * On stop: only turns Google Meet's Captions panel back OFF. The extension's
- * side panel is intentionally left open (Chrome extensions have no API to
- * close a side panel programmatically, and the user asked for it to stay).
- *
- * Google Meet re-renders the SAME utterance repeatedly while the speaker is
- * still talking (interim results growing word by word). Instead of saving
- * every growth as a brand-new line, continuations (new text starts with the
- * previous text, same speaker) UPDATE the same segment in place.
+ * Recording does NOT start automatically: a floating toggle button lets the
+ * user explicitly start/stop capturing, and it also opens Google Meet's own
+ * Captions panel (best-effort) and the extension side panel on start, and
+ * closes only the Captions panel on stop.
  */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
@@ -44,8 +38,10 @@ const CAPTION_LANGUAGE_KEYWORDS = ["caption language", "زبان زیرنویس"
 const LANGUAGE_DISPLAY_NAMES = {
   fa: ["فارسی", "Persian", "Farsi"],
   en: ["English"],
-  ar: ["العربیة", "Arabic"],
+  ar: ["العربية", "Arabic"],
 };
+
+const CONTINUATION_GAP_MS = 7000;
 
 function isRealCaptionLine(el) {
   if (el.children.length > 0) return false;
@@ -93,7 +89,6 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Best-effort: clicks Meet's own Captions toggle. Returns true if a click happened. */
 function enableCaptions() {
   if (isCaptionsPanelVisible()) return true;
   const btn = findButtonByLabelKeywords(CAPTION_TOGGLE_KEYWORDS);
@@ -108,11 +103,6 @@ function disableCaptions() {
   if (btn) btn.click();
 }
 
-/**
- * EXPERIMENTAL / best-effort. Tries to open Meet's caption-language picker
- * and select the language configured in AI Meet's settings. Any missing
- * element aborts silently - this must never block or break caption capture.
- */
 async function trySetCaptionLanguage(languageCode) {
   const wantedNames = LANGUAGE_DISPLAY_NAMES[languageCode];
   if (!wantedNames) return;
@@ -153,6 +143,7 @@ class MeetCaptionCapture {
     this.lastLineText = "";
     this.lastSpeaker = "ناشناس";
     this.currentSegmentId = null;
+    this.lastUpdateAt = 0;
     this.badgeEl = null;
     this.isRecording = false;
   }
@@ -173,6 +164,7 @@ class MeetCaptionCapture {
     this.isRecording = true;
     this.lastLineText = "";
     this.currentSegmentId = null;
+    this.lastUpdateAt = 0;
     this.updateBadge();
 
     enableCaptions();
@@ -241,12 +233,12 @@ class MeetCaptionCapture {
 
     const detectedSpeaker = findSpeakerForLine(container, lastEl);
     const speaker = detectedSpeaker || this.lastSpeaker;
+    const now = Date.now();
 
     const isContinuation =
       this.currentSegmentId !== null &&
       speaker === this.lastSpeaker &&
-      this.lastLineText.length > 0 &&
-      text.startsWith(this.lastLineText);
+      now - this.lastUpdateAt < CONTINUATION_GAP_MS;
 
     if (!isContinuation) {
       this.currentSegmentId = createSegmentId();
@@ -254,6 +246,7 @@ class MeetCaptionCapture {
 
     this.lastLineText = text;
     this.lastSpeaker = speaker;
+    this.lastUpdateAt = now;
 
     const language = PERSIAN_RANGE.test(text) ? "fa" : "en";
     this.sendMessage("meeting:segment", {
@@ -262,7 +255,7 @@ class MeetCaptionCapture {
         id: this.currentSegmentId,
         speaker,
         text,
-        timestampMs: Date.now(),
+        timestampMs: now,
         language,
       },
     });
