@@ -18,6 +18,7 @@ const DEFAULTS = {
   defaultTemplateId: "general-technical",
   languageMode: "auto",
   defaultLanguage: "fa",
+  includeFullTranscript: false,
   github: {
     enabled: false,
     token: "",
@@ -54,11 +55,10 @@ export class SettingsStore {
   /** Registers a live callback that fires whenever the theme changes in storage (e.g. from the options page). */
   onThemeChange(callback) {
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === "local" && changes.settings) {
-        const newTheme = changes.settings.newValue?.theme;
-        const oldTheme = changes.settings.oldValue?.theme;
-        if (newTheme && newTheme !== oldTheme) callback(newTheme);
-      }
+      if (area !== "local" || !changes.settings) return;
+      const newTheme = changes.settings.newValue?.theme;
+      const oldTheme = changes.settings.oldValue?.theme;
+      if (newTheme && newTheme !== oldTheme) callback(newTheme);
     });
   }
 }

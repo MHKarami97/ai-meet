@@ -85,6 +85,12 @@ async function onMeetingSegment({ meetingId, segment }) {
     meeting.segments.push(segment);
   }
   await meetingDatabase.saveMeeting(meeting);
+  chrome.runtime
+    .sendMessage({
+      type: "meeting:segmentUpdated",
+      payload: { meetingId, segment },
+    })
+    .catch(() => {});
   return { ok: true };
 }
 
@@ -95,6 +101,9 @@ async function onMeetingEnd({ meetingId, title }) {
   meeting.status = "ended";
   if (title) meeting.title = title;
   await meetingDatabase.saveMeeting(meeting);
+  chrome.runtime
+    .sendMessage({ type: "meeting:ended", payload: { meetingId } })
+    .catch(() => {});
   return meeting;
 }
 
@@ -150,7 +159,9 @@ async function onSyncToGithub({ meetingId }) {
     throw new Error("همگام‌سازی با GitHub در تنظیمات فعال نیست.");
 
   const client = new GitHubSyncClient(settings.github);
-  const markdown = new MeetingReportMarkdownBuilder(meeting).build();
+  const markdown = new MeetingReportMarkdownBuilder(meeting, {
+    includeFullTranscript: settings.includeFullTranscript,
+  }).build();
   await client.syncMeeting(meeting, markdown);
   meeting.syncedToGithub = true;
   await meetingDatabase.saveMeeting(meeting);

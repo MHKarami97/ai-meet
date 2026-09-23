@@ -25,8 +25,9 @@ class SidePanelApp {
   constructor() {
     this.meetings = [];
     this.selectedId = null;
+    this.currentMeeting = null;
     this.activeTab = "transcript";
-    this.pollTimer = null;
+    this.durationTimer = null;
     this.manualContext = null;
     this.autoScrollEnabled = true;
   }
@@ -47,34 +48,24 @@ class SidePanelApp {
     document
       .getElementById("processManualBtn")
       .addEventListener("click", () => this.processManualResult());
-    document
-      .getElementById("autoScrollToggleBtn")
-      .addEventListener("click", () => this.toggleAutoScroll());
 
     chrome.runtime.onMessage.addListener((message) => {
       if (message.type === "meeting:activated" && message.payload?.meetingId) {
+        this.selectMeeting(message.payload.meetingId);
+      } else if (
+        message.type === "meeting:segmentUpdated" &&
+        this.currentMeeting?.id === message.payload?.meetingId
+      ) {
+        this.patchSegment(message.payload.segment);
+      } else if (
+        message.type === "meeting:ended" &&
+        this.currentMeeting?.id === message.payload?.meetingId
+      ) {
         this.selectMeeting(message.payload.meetingId);
       }
     });
 
     await this.loadMeetings();
-    this.pollTimer = setInterval(() => this.refreshSelected(), 3000);
-  }
-
-  toggleAutoScroll() {
-    this.autoScrollEnabled = !this.autoScrollEnabled;
-    this.updateAutoScrollButton();
-  }
-
-  updateAutoScrollButton() {
-    const btn = document.getElementById("autoScrollToggleBtn");
-    if (!btn) return;
-    const visible = this.activeTab === "transcript";
-    btn.style.display = visible ? "flex" : "none";
-    btn.classList.toggle("off", !this.autoScrollEnabled);
-    btn.textContent = this.autoScrollEnabled
-      ? "⬇ اسکرول خودکار: فعال"
-      : "⏸ اسکرول خودکار: خاموش";
   }
 
   async loadMeetings(search) {
@@ -88,25 +79,16 @@ class SidePanelApp {
       this.selectMeeting(this.meetings[0].id);
   }
 
-  async refreshSelected() {
-    if (!this.selectedId) return;
-    const raw = await chrome.runtime.sendMessage({
-      type: "meeting:get",
-      payload: { id: this.selectedId },
-    });
-    const meeting = toMeeting(raw);
-    if (meeting && !meeting.endedAt) this.renderDetail(meeting);
-  }
-
   renderList() {
     const list = document.getElementById("meetingList");
     list.innerHTML = "";
     for (const meeting of this.meetings) {
       const card = document.createElement("div");
       card.className = `meeting-card ${meeting.id === this.selectedId ? "active" : ""}`;
+      card.dataset.id = meeting.id;
       card.innerHTML = `
         <div class="title">${this.esc(meeting.title)}</div>
-        <div class="meta">${new Date(meeting.startedAt).toLocaleDateString("fa-IR")} · ${formatTime(meeting.durationMs)}</div>`;
+        <div class="meta">${new Date(meeting.startedAt).toLocaleDateString("fa-IR")} · <span class="list-duration">${formatTime(meeting.durationMs)}</span></div>`;
       card.addEventListener("click", () => this.selectMeeting(meeting.id));
       list.appendChild(card);
     }
@@ -115,7 +97,6 @@ class SidePanelApp {
   async selectMeeting(id) {
     this.selectedId = id;
     this.activeTab = "transcript";
-    this.autoScrollEnabled = true;
     this.renderList();
     const raw = await chrome.runtime.sendMessage({
       type: "meeting:get",
@@ -124,11 +105,25 @@ class SidePanelApp {
     this.renderDetail(toMeeting(raw));
   }
 
+  patchSegment(segment) {
+    if (!this.currentMeeting) return;
+    const idx = this.currentMeeting.segments.findIndex(
+      (s) => s.id === segment.id,
+    );
+    if (idx >= 0) this.currentMeeting.segments[idx] = segment;
+    else this.currentMeeting.segments.push(segment);
+
+    if (this.activeTab === "transcript") {
+      this.renderTabContent(this.currentMeeting);
+    }
+  }
+
   async renderDetail(meeting) {
+    this.stopDurationTicker();
+    this.currentMeeting = meeting;
     const root = document.getElementById("meetingDetail");
     if (!meeting) {
       root.innerHTML = '<div class="empty-state">جلسه‌ای انتخاب نشده.</div>';
-      this.updateAutoScrollButton();
       return;
     }
     const settings = await settingsStore.getAll();
@@ -150,7 +145,7 @@ class SidePanelApp {
         <div>
           <h2>${this.esc(meeting.title)}</h2>
           <div class="meta">
-            ${new Date(meeting.startedAt).toLocaleString("fa-IR")} · ${formatTime(meeting.durationMs)}
+            ${new Date(meeting.startedAt).toLocaleString("fa-IR")} · <span id="durationText">${formatTime(meeting.durationMs)}</span>
             ${meeting.syncedToGithub ? '<span class="badge synced">✔ GitHub</span>' : '<span class="badge">همگام‌سازی نشده</span>'}
           </div>
         </div>
@@ -176,6 +171,10 @@ class SidePanelApp {
         <button class="tab-btn ${this.activeTab === "analysis" ? "active" : ""}" data-tab="analysis">تحلیل پیشرفته</button>
       </div>
       <div id="tabContent"></div>
+      <button class="autoscroll-toggle ${this.autoScrollEnabled ? "" : "paused"}" id="autoScrollToggleBtn"
+        style="display:${this.activeTab === "transcript" ? "flex" : "none"}">
+        ${this.autoScrollEnabled ? "⏸ توقف اسکرول خودکار" : "▶ فعال‌سازی اسکرول خودکار"}
+      </button>
     `;
 
     document.getElementById("generateBtn").addEventListener("click", () => {
@@ -198,17 +197,49 @@ class SidePanelApp {
         this.renderDetail(meeting);
       });
     });
+    document
+      .getElementById("autoScrollToggleBtn")
+      .addEventListener("click", (e) => {
+        this.autoScrollEnabled = !this.autoScrollEnabled;
+        e.currentTarget.classList.toggle("paused", !this.autoScrollEnabled);
+        e.currentTarget.textContent = this.autoScrollEnabled
+          ? "⏸ توقف اسکرول خودکار"
+          : "▶ فعال‌سازی اسکرول خودکار";
+      });
 
     this.renderTabContent(meeting);
+    this.startDurationTicker(meeting);
+  }
+
+  startDurationTicker(meeting) {
+    if (meeting.endedAt) return;
+    const startedAtMs = new Date(meeting.startedAt).getTime();
+    this.durationTimer = setInterval(() => {
+      const liveText = formatTime(Date.now() - startedAtMs);
+      const durationEl = document.getElementById("durationText");
+      if (durationEl) durationEl.textContent = liveText;
+      const listDurationEl = document.querySelector(
+        `.meeting-card[data-id="${meeting.id}"] .list-duration`,
+      );
+      if (listDurationEl) listDurationEl.textContent = liveText;
+    }, 1000);
+  }
+
+  stopDurationTicker() {
+    if (this.durationTimer) {
+      clearInterval(this.durationTimer);
+      this.durationTimer = null;
+    }
   }
 
   /**
    * Builds the HTML for the active tab, swaps it in, then re-triggers the
    * `.tab-anim` CSS animation (fade + slight slide) so switching tabs never
    * feels like an instant snap. For the transcript tab specifically, while
-   * the meeting is still recording AND the user hasn't paused auto-scroll,
-   * the outer scroll container is pushed to the bottom on every refresh so
-   * the newest caption line stays in view.
+   * the meeting is still recording AND the user has not paused auto-scroll
+   * (via the small toggle button at the bottom-left), the outer scroll
+   * container is pushed to the bottom whenever this is called (now driven
+   * by real-time segment pushes instead of a periodic poll).
    */
   renderTabContent(meeting) {
     const el = document.getElementById("tabContent");
@@ -262,8 +293,6 @@ class SidePanelApp {
     el.classList.remove("tab-anim");
     void el.offsetWidth;
     el.classList.add("tab-anim");
-
-    this.updateAutoScrollButton();
 
     if (
       this.activeTab === "transcript" &&
