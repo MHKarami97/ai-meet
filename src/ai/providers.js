@@ -30,37 +30,71 @@ export class GeminiProvider extends AiProvider {
 }
 
 /**
- * Gemini through Cloudflare AI Gateway (useful when a corporate network blocks
- * generativelanguage.googleapis.com but allows *.cloudflare.com).
- * @see https://developers.cloudflare.com/ai-gateway/usage/providers/google-ai-studio/
+ * Gemini through Cloudflare's unified /ai/run endpoint (billed through the
+ * Cloudflare account itself — no separate Google API key needed).
+ *
+ * Cloudflare replaced/superseded the old "Universal Endpoint" pattern
+ * (gateway.ai.cloudflare.com/v1/{account}/{gateway}, now deprecated) with a
+ * single REST surface on api.cloudflare.com. Auth is a Cloudflare API token
+ * (Account > Workers AI > Read permission), not a Google AI Studio key, and
+ * the model id uses the catalog's "author/model" naming (e.g.
+ * "google/gemini-2.5-flash").
+ * @see https://developers.cloudflare.com/ai-gateway/usage/rest-api/
  */
 export class CloudflareGatewayGeminiProvider extends AiProvider {
   constructor(config) {
     super(config);
     this.accountId = config.accountId;
-    this.gatewayId = config.gatewayId;
+    // Optional: routes the request through a specific named gateway so its
+    // logging/caching/rate-limit settings apply. "default" always exists.
+    this.gatewayId = config.gatewayId || "default";
   }
 
   async complete(prompt) {
-    const model = this.model || "gemini-2.5-flash";
-    const url = `https://gateway.ai.cloudflare.com/v1/${this.accountId}/${this.gatewayId}/google-ai-studio/v1beta/models/${model}:generateContent?key=${this.apiKey}`;
+    const model = this.model || "google/gemini-2.5-flash";
+    const url = `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/ai/run`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        // this.apiKey holds the Cloudflare API Token for this provider type,
+        // NOT a Gemini/Google AI Studio key.
+        Authorization: `Bearer ${this.apiKey}`,
+        "cf-aig-gateway-id": this.gatewayId,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
+        model,
+        input: {
+          contents: [{ parts: [{ text: prompt }], role: "user" }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
         },
       }),
     });
     if (!res.ok)
       throw new Error(
-        `Cloudflare AI Gateway error ${res.status}: ${await res.text()}`,
+        `Cloudflare AI (/ai/run) error ${res.status}: ${await res.text()}`,
       );
-    return extractGeminiText(await res.json());
+    return extractCloudflareRunText(await res.json());
   }
+}
+
+/**
+ * The /ai/run envelope wraps the underlying provider's native response, but
+ * Cloudflare's docs don't pin down one single shape for every provider —
+ * so this checks the few plausible locations defensively instead of
+ * assuming exactly one.
+ */
+function extractCloudflareRunText(json) {
+  return (
+    json?.result?.response ??
+    json?.result?.candidates?.[0]?.content?.parts?.[0]?.text ??
+    json?.result?.result?.candidates?.[0]?.content?.parts?.[0]?.text ??
+    json?.candidates?.[0]?.content?.parts?.[0]?.text ??
+    ""
+  );
 }
 
 /**

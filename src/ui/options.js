@@ -4,10 +4,10 @@ import { PROMPT_TEMPLATES } from "../ai/prompt-templates.js";
 import { PROVIDER_TYPES } from "../ai/providers.js";
 
 const PROVIDER_TYPE_LABELS = {
-  [PROVIDER_TYPES.GEMINI]: "Gemini (مستقیم)",
-  [PROVIDER_TYPES.CLOUDFLARE_GEMINI]: "Gemini از طریق Cloudflare AI Gateway",
+  [PROVIDER_TYPES.GEMINI]: "Gemini",
   [PROVIDER_TYPES.OPENAI_COMPATIBLE]: "OpenAI یا سرور هم‌سازگار (Ollama و...)",
-  [PROVIDER_TYPES.MANUAL]: "بدون کلید (کپی دستی در چت هوش مصنوعی)",
+  [PROVIDER_TYPES.CLOUDFLARE_GEMINI]: "Gemini از طریق Cloudflare",
+  [PROVIDER_TYPES.MANUAL]: "کپی دستی در هوش مصنوعی",
 };
 
 class OptionsApp {
@@ -100,16 +100,17 @@ class OptionsApp {
             ? '<p class="manual-note">این Provider هیچ کلیدی لازم ندارد. هنگام ساخت گزارش، افزونه یک متن آماده برای کپی به شما می‌دهد تا در هر چت هوش مصنوعی (ChatGPT، Gemini، Claude و...) بچسبانید و پاسخ را برگردانید.</p>'
             : `
         <div class="row-inline" style="margin-top:8px">
-          <input type="text" data-field="apiKey" value="${this.esc(p.apiKey || "")}" placeholder="API Key">
-          <input type="text" data-field="model" value="${this.esc(p.model || "")}" placeholder="model (مثلاً gemini-2.5-flash)">
+          <input type="text" data-field="apiKey" value="${this.esc(p.apiKey || "")}" placeholder="${isCloudflare ? "Cloudflare API Token (نه کلید Gemini)" : "API Key"}">
+          <input type="text" data-field="model" value="${this.esc(p.model || "")}" placeholder="${isCloudflare ? "model (مثلاً google/gemini-2.5-flash)" : "model (مثلاً gemini-2.5-flash)"}">
         </div>
         ${p.type === PROVIDER_TYPES.OPENAI_COMPATIBLE ? `<div class="row-inline" style="margin-top:8px"><input type="text" data-field="baseUrl" value="${this.esc(p.baseUrl || "")}" placeholder="Base URL (پیش‌فرض https://api.openai.com/v1)"></div>` : ""}
         ${
           isCloudflare
             ? `<div class="row-inline" style="margin-top:8px">
           <input type="text" data-field="accountId" value="${this.esc(p.accountId || "")}" placeholder="Cloudflare Account ID">
-          <input type="text" data-field="gatewayId" value="${this.esc(p.gatewayId || "")}" placeholder="AI Gateway ID">
-        </div>`
+          <input type="text" data-field="gatewayId" value="${this.esc(p.gatewayId || "")}" placeholder="Gateway ID (اختیاری، پیش‌فرض default)">
+        </div>
+        <p class="manual-note">این مسیر از اندپوینت یکپارچه‌ی جدید Cloudflare (<code>/ai/run</code>) استفاده می‌کند: به یک Gemini API key نیازی نیست؛ فقط یک <b>Cloudflare API Token</b> با دسترسی <b>Account &gt; Workers AI &gt; Read</b> کافی است و هزینه از طریق حساب Cloudflare خودتان (Unified Billing) محاسبه می‌شود.</p>`
             : ""
         }`
         }
