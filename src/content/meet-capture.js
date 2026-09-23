@@ -90,13 +90,41 @@ function findButtonByLabelKeywords(keywords) {
   });
 }
 
+function findCaptionToggleButton() {
+  const buttons = Array.from(document.querySelectorAll("button[aria-label]"));
+
+  const exactMatch = buttons.find((b) => {
+    const label = b.getAttribute("aria-label").toLowerCase();
+    return (
+      label === "captions" ||
+      label === "turn on captions" ||
+      label === "turn off captions" ||
+      label === "زیرنویس" ||
+      label === "فعال کردن زیرنویس" ||
+      label === "خاموش کردن زیرنویس"
+    );
+  });
+
+  if (exactMatch) return exactMatch;
+
+  return buttons.find((b) => {
+    const label = b.getAttribute("aria-label").toLowerCase();
+    return (
+      label.includes("caption") &&
+      !label.includes("settings") &&
+      !label.includes("language") &&
+      !label.includes("option")
+    );
+  });
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function enableCaptions() {
   if (isCaptionsPanelVisible()) return true;
-  const btn = findButtonByLabelKeywords(CAPTION_TOGGLE_KEYWORDS);
+  const btn = findCaptionToggleButton();
   if (!btn) return false;
   btn.click();
   return true;
@@ -104,7 +132,7 @@ function enableCaptions() {
 
 function disableCaptions() {
   if (!isCaptionsPanelVisible()) return;
-  const btn = findButtonByLabelKeywords(CAPTION_TOGGLE_KEYWORDS);
+  const btn = findCaptionToggleButton();
   if (btn) btn.click();
 }
 
@@ -208,6 +236,9 @@ class MeetCaptionCapture {
         document.querySelector(sel),
       ).find(Boolean);
       if (!container) return false;
+
+      this.applyCaptionsUiVisibility(container);
+
       this.observer = new MutationObserver(() =>
         this.onCaptionsMutated(container),
       );
@@ -216,7 +247,6 @@ class MeetCaptionCapture {
         subtree: true,
         characterData: true,
       });
-      this.applyCaptionsUiVisibility(container);
       return true;
     };
 
@@ -232,16 +262,41 @@ class MeetCaptionCapture {
   }
 
   applyCaptionsUiVisibility(container) {
-    if (!this.hideCaptionsUi) return;
+    if (!this.hideCaptionsUi || !container) return;
     this.hiddenCaptionContainer = container;
-    this.hiddenCaptionOriginalDisplay = container.style.display;
-    container.style.display = "none";
+
+    this.hiddenCaptionOriginalDisplay = container.style.display || "";
+    this.hiddenCaptionOriginalPosition = container.style.position || "";
+    this.hiddenCaptionOriginalZIndex = container.style.zIndex || "";
+    this.hiddenCaptionOriginalOpacity = container.style.opacity || "";
+    this.hiddenCaptionOriginalPointerEvents =
+      container.style.pointerEvents || "";
+
+    container.style.opacity = "0";
+    container.style.pointerEvents = "none";
+    container.style.position = "fixed";
+    container.style.zIndex = "-1";
+    container.style.top = "0";
+    container.style.left = "0";
+    container.style.width = "1px";
+    container.style.height = "1px";
+    container.style.overflow = "hidden";
   }
 
   restoreCaptionsUiVisibility() {
     if (this.hiddenCaptionContainer) {
-      this.hiddenCaptionContainer.style.display =
-        this.hiddenCaptionOriginalDisplay || "";
+      const container = this.hiddenCaptionContainer;
+      container.style.opacity = this.hiddenCaptionOriginalOpacity || "";
+      container.style.pointerEvents =
+        this.hiddenCaptionOriginalPointerEvents || "";
+      container.style.position = this.hiddenCaptionOriginalPosition || "";
+      container.style.zIndex = this.hiddenCaptionOriginalZIndex || "";
+      container.style.top = "";
+      container.style.left = "";
+      container.style.width = "";
+      container.style.height = "";
+      container.style.overflow = "";
+      container.style.display = this.hiddenCaptionOriginalDisplay || "";
       this.hiddenCaptionContainer = null;
     }
   }

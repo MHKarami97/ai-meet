@@ -283,7 +283,7 @@ class SidePanelApp {
         meeting.segments
           .map(
             (s) =>
-              `<div class="transcript-line"><span class="time">${formatTime(s.timestampMs - new Date(meeting.startedAt).getTime())}</span><span class="speaker">${this.esc(s.speaker)}</span><span class="text">${this.esc(s.text)}</span></div>`,
+              `<div class="transcript-line"> <div class="line-header"> <span class="time">${formatTime(s.timestampMs - new Date(meeting.startedAt).getTime())}</span> <span class="speaker">${this.esc(s.speaker)}</span> </div> <span class="text">${this.esc(s.text)}</span> </div>`,
           )
           .join("") || "<p>هنوز متنی ثبت نشده.</p>"
       }</div>`;
