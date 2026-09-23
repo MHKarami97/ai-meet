@@ -24,6 +24,12 @@ class SidePanelApp {
     document.getElementById('copyPromptBtn').addEventListener('click', () => this.copyManualPrompt());
     document.getElementById('processManualBtn').addEventListener('click', () => this.processManualResult());
 
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === 'meeting:activated' && message.payload?.meetingId) {
+        this.selectMeeting(message.payload.meetingId);
+      }
+    });
+
     await this.loadMeetings();
     this.pollTimer = setInterval(() => this.refreshSelected(), 3000);
   }

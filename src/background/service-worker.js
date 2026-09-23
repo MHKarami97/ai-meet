@@ -13,15 +13,21 @@ chrome.action.onClicked.addListener(async (tab) => {
   await chrome.sidePanel.open({ tabId: tab.id });
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  handleMessage(message)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleMessage(message, sender)
     .then(sendResponse)
     .catch((err) => sendResponse({ error: err.message }));
   return true;
 });
 
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   switch (message.type) {
+    case 'sidepanel:open':
+      // Must run with no preceding await: chrome.sidePanel.open() only
+      // works while the triggering click's transient user gesture is
+      // still alive, and that gesture does not survive an await.
+      if (sender?.tab?.id) chrome.sidePanel.open({ tabId: sender.tab.id });
+      return { ok: true };
     case 'meeting:start':
       return onMeetingStart(message.payload);
     case 'meeting:segment':
@@ -58,15 +64,10 @@ async function onMeetingStart({ meetUrl, language }) {
     language: language || settings.defaultLanguage
   });
   await meetingDatabase.saveMeeting(meeting);
+  chrome.runtime.sendMessage({ type: 'meeting:activated', payload: { meetingId: meeting.id } }).catch(() => {});
   return meeting;
 }
 
-/**
- * Upserts by segment.id: Google Meet keeps re-rendering the same utterance
- * while a speaker is still talking, so the content script sends growing
- * text under the SAME id until the sentence is finished. Only a genuinely
- * new utterance arrives with a new id and gets appended.
- */
 async function onMeetingSegment({ meetingId, segment }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
   if (!meeting) throw new Error('جلسه پیدا نشد.');

@@ -1,23 +1,29 @@
 /**
  * Reads Google Meet's own live-caption panel (set to Persian, English, etc. by
- * the user inside Meet itself) and streams each finalized line to the
- * background worker with a speaker label and timestamp.
+ * the user, or auto-attempted by this script) and streams each finalized
+ * line to the background worker with a speaker label and timestamp.
+ *
+ * On start:
+ *   1. Requests the extension side panel to open (must happen synchronously,
+ *      before any await, to stay inside Chrome's "user gesture" window —
+ *      see https://developer.chrome.com/docs/extensions/reference/api/sidePanel).
+ *   2. Clicks Google Meet's own Captions toggle button (best-effort, matched
+ *      by aria-label keywords since Meet has no stable public selector).
+ *   3. Best-effort attempts to switch the caption language to the one chosen
+ *      in AI Meet's settings. This step is experimental: Google Meet's
+ *      caption-language menu has no documented selector and its DOM changes
+ *      between releases, so this silently no-ops if it can't find the menu.
+ *      Setting the language manually once in Meet is the reliable fallback —
+ *      Meet remembers it for future meetings.
+ *
+ * On stop: only turns Google Meet's Captions panel back OFF. The extension's
+ * side panel is intentionally left open (Chrome extensions have no API to
+ * close a side panel programmatically, and the user asked for it to stay).
  *
  * Google Meet re-renders the SAME utterance repeatedly while the speaker is
  * still talking (interim results growing word by word). Instead of saving
- * every growth as a brand-new line, we detect continuations (new text starts
- * with the previous text, same speaker) and UPDATE the same segment in
- * place. A new segment is only created when the text does not extend the
- * previous one (new sentence / new speaker / caption reset).
- *
- * Speaker detection is scoped to the DOM block that actually contains the
- * current caption line (walking up to the block that is a direct child of
- * the captions container), instead of searching the whole panel — searching
- * the whole panel always matched the FIRST visible name (typically "You")
- * regardless of who was actually speaking.
- *
- * Recording does NOT start automatically: a floating toggle button lets the
- * user explicitly start/stop capturing.
+ * every growth as a brand-new line, continuations (new text starts with the
+ * previous text, same speaker) UPDATE the same segment in place.
  */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
@@ -33,6 +39,9 @@ const NON_CAPTION_TEXT_BLOCKLIST = [
   'turn on captions',
   'turn off captions'
 ];
+const CAPTION_TOGGLE_KEYWORDS = ['caption', 'زیرنویس'];
+const CAPTION_LANGUAGE_KEYWORDS = ['caption language', 'زبان زیرنویس'];
+const LANGUAGE_DISPLAY_NAMES = { fa: ['فارسی', 'Persian', 'Farsi'], en: ['English'], ar: ['العربیة', 'Arabic'] };
 
 function isRealCaptionLine(el) {
   if (el.children.length > 0) return false;
@@ -47,11 +56,6 @@ function createSegmentId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-/**
- * Scopes the search for a speaker name to the DOM block that owns `lineEl`,
- * instead of the whole captions panel (which would always return the first
- * participant listed, usually "You").
- */
 function findSpeakerForLine(container, lineEl) {
   let block = lineEl;
   while (block.parentElement && block.parentElement !== container) {
@@ -63,6 +67,68 @@ function findSpeakerForLine(container, lineEl) {
   const leaves = Array.from(block.querySelectorAll('div, span')).filter(isRealCaptionLine);
   const nameEl = leaves.find((el) => el !== lineEl && el.textContent.trim() !== lineText);
   return nameEl?.textContent?.trim() || null;
+}
+
+function isCaptionsPanelVisible() {
+  return CAPTION_CONTAINER_SELECTORS.some((sel) => document.querySelector(sel));
+}
+
+function findButtonByLabelKeywords(keywords) {
+  const buttons = Array.from(document.querySelectorAll('button[aria-label]'));
+  return buttons.find((b) => {
+    const label = b.getAttribute('aria-label').toLowerCase();
+    return keywords.some((k) => label.includes(k.toLowerCase()));
+  });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Best-effort: clicks Meet's own Captions toggle. Returns true if a click happened. */
+function enableCaptions() {
+  if (isCaptionsPanelVisible()) return true;
+  const btn = findButtonByLabelKeywords(CAPTION_TOGGLE_KEYWORDS);
+  if (!btn) return false;
+  btn.click();
+  return true;
+}
+
+function disableCaptions() {
+  if (!isCaptionsPanelVisible()) return;
+  const btn = findButtonByLabelKeywords(CAPTION_TOGGLE_KEYWORDS);
+  if (btn) btn.click();
+}
+
+/**
+ * EXPERIMENTAL / best-effort. Tries to open Meet's caption-language picker
+ * and select the language configured in AI Meet's settings. Any missing
+ * element aborts silently — this must never block or break caption capture.
+ */
+async function trySetCaptionLanguage(languageCode) {
+  const wantedNames = LANGUAGE_DISPLAY_NAMES[languageCode];
+  if (!wantedNames) return;
+
+  try {
+    await sleep(600);
+    const languageBtn = findButtonByLabelKeywords(CAPTION_LANGUAGE_KEYWORDS);
+    if (!languageBtn) return;
+    languageBtn.click();
+
+    await sleep(400);
+    const menu = document.querySelector('[role="listbox"], [role="menu"]');
+    if (!menu) return;
+    const options = Array.from(menu.querySelectorAll('[role="option"], [role="menuitemradio"], [role="menuitem"]'));
+    const match = options.find((opt) => wantedNames.some((name) => opt.textContent.trim().includes(name)));
+    if (!match) return;
+    match.click();
+
+    await sleep(300);
+    const applyBtn = findButtonByLabelKeywords(['apply', 'اعمال']);
+    applyBtn?.click();
+  } catch {
+    // Silently ignored: this feature is best-effort only.
+  }
 }
 
 class MeetCaptionCapture {
@@ -93,6 +159,12 @@ class MeetCaptionCapture {
     this.lastLineText = '';
     this.currentSegmentId = null;
     this.updateBadge();
+
+    enableCaptions();
+    if (settings.languageMode === 'manual') {
+      trySetCaptionLanguage(settings.defaultLanguage);
+    }
+
     this.attachObserver();
   }
 
@@ -103,6 +175,7 @@ class MeetCaptionCapture {
     this.isRecording = false;
     this.currentSegmentId = null;
     this.updateBadge();
+    disableCaptions();
     if (this.meetingId) await this.sendMessage('meeting:end', { meetingId: this.meetingId });
   }
 
@@ -171,7 +244,12 @@ class MeetCaptionCapture {
     this.badgeEl.type = 'button';
     this.badgeEl.className = 'ai-meet-badge stopped';
     this.badgeEl.innerHTML = '<span class="dot"></span><span>AI Meet — برای شروع ضبط کلیک کنید</span>';
-    this.badgeEl.addEventListener('click', () => this.toggle());
+    this.badgeEl.addEventListener('click', () => {
+      if (!this.isRecording) {
+        chrome.runtime.sendMessage({ type: 'sidepanel:open' }).catch(() => {});
+      }
+      this.toggle();
+    });
     document.body.appendChild(this.badgeEl);
     window.addEventListener('beforeunload', () => this.stop());
   }
