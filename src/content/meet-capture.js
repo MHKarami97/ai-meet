@@ -5,19 +5,24 @@
  *
  * Google Meet's live ASR does not just append words to the current caption
  * line - it frequently REVISES the tail of the sentence as more audio
- * context arrives (e.g. "...ببینیم چه" becomes "...ببینیم چجوری میشه داستان").
- * Because of that, matching continuations by "new text starts with the old
- * text" is unreliable and was producing duplicate growing lines. Instead,
- * continuations are now detected purely by TIME PROXIMITY: as long as the
- * same speaker keeps updating captions within CONTINUATION_GAP_MS of the
- * previous update, everything is merged into the same evolving segment.
- * A new segment only starts when the speaker changes or there is a real
- * pause longer than the gap.
+ * context arrives. Continuations are detected purely by TIME PROXIMITY: as
+ * long as the same speaker keeps updating captions within
+ * CONTINUATION_GAP_MS of the previous update, everything is merged into the
+ * same evolving segment. A new segment only starts when the speaker changes
+ * or there is a real pause longer than the gap.
  *
  * Recording does NOT start automatically: a floating toggle button lets the
  * user explicitly start/stop capturing, and it also opens Google Meet's own
  * Captions panel (best-effort) and the extension side panel on start, and
  * closes only the Captions panel on stop.
+ *
+ * If the user enables "hideCaptionsUi" in settings, the matched captions
+ * container is visually hidden (element.style.display = 'none') for the
+ * duration of the recording to free up screen space on the Meet page —
+ * this does NOT stop capture, because a hidden element is still part of the
+ * live DOM and MutationObserver keeps receiving its updates normally. Note:
+ * this is unverified against any Meet-side "pause updates when hidden"
+ * optimization Google might add in the future.
  */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
@@ -146,6 +151,9 @@ class MeetCaptionCapture {
     this.lastUpdateAt = 0;
     this.badgeEl = null;
     this.isRecording = false;
+    this.hideCaptionsUi = false;
+    this.hiddenCaptionContainer = null;
+    this.hiddenCaptionOriginalDisplay = "";
   }
 
   init() {
@@ -165,6 +173,7 @@ class MeetCaptionCapture {
     this.lastLineText = "";
     this.currentSegmentId = null;
     this.lastUpdateAt = 0;
+    this.hideCaptionsUi = settings.hideCaptionsUi === true;
     this.updateBadge();
 
     enableCaptions();
@@ -182,6 +191,7 @@ class MeetCaptionCapture {
     this.isRecording = false;
     this.currentSegmentId = null;
     this.updateBadge();
+    this.restoreCaptionsUiVisibility();
     disableCaptions();
     if (this.meetingId)
       await this.sendMessage("meeting:end", { meetingId: this.meetingId });
@@ -206,6 +216,7 @@ class MeetCaptionCapture {
         subtree: true,
         characterData: true,
       });
+      this.applyCaptionsUiVisibility(container);
       return true;
     };
 
@@ -218,6 +229,21 @@ class MeetCaptionCapture {
       childList: true,
       subtree: true,
     });
+  }
+
+  applyCaptionsUiVisibility(container) {
+    if (!this.hideCaptionsUi) return;
+    this.hiddenCaptionContainer = container;
+    this.hiddenCaptionOriginalDisplay = container.style.display;
+    container.style.display = "none";
+  }
+
+  restoreCaptionsUiVisibility() {
+    if (this.hiddenCaptionContainer) {
+      this.hiddenCaptionContainer.style.display =
+        this.hiddenCaptionOriginalDisplay || "";
+      this.hiddenCaptionContainer = null;
+    }
   }
 
   onCaptionsMutated(container) {
@@ -287,7 +313,13 @@ class MeetCaptionCapture {
 
   async getSettings() {
     const stored = await chrome.storage.local.get("settings");
-    return stored.settings || { languageMode: "auto", defaultLanguage: "fa" };
+    return (
+      stored.settings || {
+        languageMode: "auto",
+        defaultLanguage: "fa",
+        hideCaptionsUi: false,
+      }
+    );
   }
 
   sendMessage(type, payload) {

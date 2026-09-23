@@ -32,7 +32,7 @@
     </section>
 
     <section class="section">
-      <h2>زبان و رفتار روی صفحه‌ی Meet</h2>
+      <h2>زبان و نمایش زیرنویس در Google Meet</h2>
       <div class="row">
         <label><input type="radio" name="languageMode" value="auto"> تشخیص خودکار از روی زیرنویس گوگل میت</label>
         <label><input type="radio" name="languageMode" value="manual"> تعیین دستی زبان</label>
@@ -45,14 +45,12 @@
           <option value="ar">العربية</option>
         </select>
       </div>
-      <p class="hint">توجه: زبان زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).
-      </p>
       <div class="row">
-        <label><input type="checkbox" id="hideCaptionsPanel"> پنهان‌کردن پنل زیرنویس گوگل میت هنگام ضبط (فضایی از صفحه
-          اشغال نکند)</label>
+        <label><input type="checkbox" id="hideCaptionsUi"> پنهان‌کردن نمایش زیرنویس گوگل میت روی صفحه در حین ضبط</label>
       </div>
-      <p class="hint">پیش‌فرض خاموش. زیرنویس همچنان در پس‌زمینه توسط افزونه خوانده می‌شود؛ فقط ظاهرش روی صفحه‌ی Meet جمع
-        می‌شود.</p>
+      <p class="hint">پیش‌فرض خاموش است. اگر روشن باشد، جای کادر زیرنویس روی صفحه‌ی Google Meet در حین ضبط آزاد می‌شود؛
+        ضبط و رونوشت‌برداری افزونه بدون تغییر ادامه دارد، چون از روی DOM همان کادر (حتی مخفی) خوانده می‌شود. توجه: زبان
+        زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).</p>
     </section>
 
     <section class="section">

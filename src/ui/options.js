@@ -82,12 +82,6 @@ class OptionsApp {
     checkbox.addEventListener("change", () => {
       this.settings.includeFullTranscript = checkbox.checked;
     });
-
-    const hideCaptions = document.getElementById("hideCaptionsPanel");
-    hideCaptions.checked = !!this.settings.hideCaptionsPanel;
-    hideCaptions.addEventListener("change", () => {
-      this.settings.hideCaptionsPanel = hideCaptions.checked;
-    });
   }
 
   addProvider() {
@@ -262,6 +256,12 @@ class OptionsApp {
     select.value = this.settings.defaultLanguage;
     select.addEventListener("change", () => {
       this.settings.defaultLanguage = select.value;
+    });
+
+    const hideCaptionsCheckbox = document.getElementById("hideCaptionsUi");
+    hideCaptionsCheckbox.checked = !!this.settings.hideCaptionsUi;
+    hideCaptionsCheckbox.addEventListener("change", () => {
+      this.settings.hideCaptionsUi = hideCaptionsCheckbox.checked;
     });
   }
 

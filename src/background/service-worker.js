@@ -2,7 +2,7 @@ import { meetingDatabase } from "../db/database.js";
 import { Meeting } from "../db/models.js";
 import { meetingSummarizer } from "./summarizer.js";
 import { settingsStore } from "./settings-store.js";
-import { SyncProviderFactory } from "./sync-providers.js";
+import { SyncProviderFactory } from "./sync-provider.js";
 import { MeetingReportMarkdownBuilder } from "../export/markdown-builder.js";
 
 chrome.runtime.onInstalled.addListener(() => {

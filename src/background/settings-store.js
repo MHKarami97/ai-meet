@@ -19,8 +19,7 @@ const DEFAULTS = {
   languageMode: "auto",
   defaultLanguage: "fa",
   includeFullTranscript: false,
-  hideCaptionsPanel: false,
-  sidebarCollapsed: false,
+  hideCaptionsUi: false,
   sync: {
     enabled: false,
     provider: "github", // 'github' | 'gitlab' | 'azure-devops'

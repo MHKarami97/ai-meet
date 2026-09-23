@@ -80,6 +80,11 @@ body {
   align-items: center;
   gap: 8px;
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .logo-dot {
   width: 10px;
   height: 10px;
@@ -126,6 +131,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
+  transition:
+    width 0.2s ease,
+    padding 0.2s ease,
+    border-color 0.2s ease;
+}
+.meeting-list.collapsed {
+  width: 0;
+  padding: 0;
+  border-left-color: transparent;
+  overflow: hidden;
 }
 .meeting-card {
   background: var(--panel);

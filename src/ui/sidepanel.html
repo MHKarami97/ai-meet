@@ -12,7 +12,10 @@
   <div class="app">
     <header class="app-header">
       <div class="brand"><span class="logo-dot"></span> AI Meet</div>
-      <button id="openOptionsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
+      <div class="header-actions">
+        <button id="toggleListBtn" class="icon-btn" title="کوچک/بزرگ‌کردن لیست جلسات">☰</button>
+        <button id="openOptionsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
+      </div>
     </header>
     <div class="search-row">
       <input id="searchInput" type="text" placeholder="جست‌وجو در تاریخچه جلسات...">
@@ -24,9 +27,6 @@
       </main>
     </div>
   </div>
-
-  <button id="autoScrollToggleBtn" class="auto-scroll-btn" title="روشن/خاموش کردن اسکرول خودکار متن کامل">اسکرول
-    خودکار: فعال</button>
 
   <div class="modal-backdrop" id="manualModal">
     <div class="modal">

@@ -21,6 +21,8 @@ const SECTION_TYPE_LABELS = {
   "status-report": "گزارش وضعیت",
 };
 
+const LIST_COLLAPSED_KEY = "ui:meetingListCollapsed";
+
 class SidePanelApp {
   constructor() {
     this.meetings = [];
@@ -30,12 +32,17 @@ class SidePanelApp {
     this.durationTimer = null;
     this.manualContext = null;
     this.autoScrollEnabled = true;
+    this.listCollapsed = false;
   }
 
   async init() {
+    await this.initListCollapse();
     document
       .getElementById("openOptionsBtn")
       .addEventListener("click", () => chrome.runtime.openOptionsPage());
+    document
+      .getElementById("toggleListBtn")
+      .addEventListener("click", () => this.toggleListCollapse());
     document
       .getElementById("searchInput")
       .addEventListener("input", (e) => this.loadMeetings(e.target.value));
@@ -66,6 +73,24 @@ class SidePanelApp {
     });
 
     await this.loadMeetings();
+  }
+
+  async initListCollapse() {
+    const stored = await chrome.storage.local.get(LIST_COLLAPSED_KEY);
+    this.listCollapsed = !!stored[LIST_COLLAPSED_KEY];
+    this.applyListCollapseState();
+  }
+
+  toggleListCollapse() {
+    this.listCollapsed = !this.listCollapsed;
+    this.applyListCollapseState();
+    chrome.storage.local.set({ [LIST_COLLAPSED_KEY]: this.listCollapsed });
+  }
+
+  applyListCollapseState() {
+    document
+      .getElementById("meetingList")
+      .classList.toggle("collapsed", this.listCollapsed);
   }
 
   async loadMeetings(search) {
