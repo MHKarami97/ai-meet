@@ -37,7 +37,7 @@ export const PROMPT_TEMPLATES = [
   },
   {
     id: "code-review",
-    name: "ری‌ویو کد / Pull Request",
+    name: "کد ریویو / Pull Request",
     description: "جلسات بررسی کد، merge/refactor و بحث‌های کیفیت کد.",
     systemInstruction: `این جلسه یک نشست بررسی کد (Code Review) است. نکات کیفیت کد، خطرات امنیتی یا عملکردی مطرح‌شده، توافق‌های merge/refactor، و اقدامات لازم برای تغییر کد را استخراج کن.${JSON_SCHEMA_INSTRUCTION}`,
   },
@@ -61,7 +61,7 @@ export const PROMPT_TEMPLATES = [
   },
   {
     id: "retrospective",
-    name: "رتروسپکتیو",
+    name: "رترو",
     description: "جلسات بازنگری اسپرینت یا پروژه (چه خوب پیش رفت / چه بد بود).",
     systemInstruction: `این جلسه رتروسپکتیو تیم است. نکات مثبتی که باید ادامه یابند، نکات منفی که باید اصلاح شوند، و مهم‌تر از همه اقدامات بهبود مشخص (actionItems) با مسئول را استخراج کن. تصمیمات (keyDecisions) باید شامل تغییرات فرآیندی توافق‌شده باشد.${JSON_SCHEMA_INSTRUCTION}`,
   },

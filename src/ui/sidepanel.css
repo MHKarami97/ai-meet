@@ -183,11 +183,17 @@ body {
   gap: 10px;
   margin-bottom: 14px;
 }
+.actions-row > select {
+  width: 100%;
+}
 .btn-row {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+  width: 100%;
+}
+.btn-row .btn {
+  flex: 1;
+  text-align: center;
 }
 .btn {
   border: none;
