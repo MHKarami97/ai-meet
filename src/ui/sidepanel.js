@@ -171,8 +171,7 @@ class SidePanelApp {
         <button class="tab-btn ${this.activeTab === "analysis" ? "active" : ""}" data-tab="analysis">تحلیل پیشرفته</button>
       </div>
       <div id="tabContent"></div>
-      <button class="autoscroll-toggle ${this.autoScrollEnabled ? "" : "paused"}" id="autoScrollToggleBtn"
-        style="display:${this.activeTab === "transcript" ? "flex" : "none"}">
+      <button class="autoscroll-toggle ${this.autoScrollEnabled ? "" : "paused"}" id="autoScrollToggleBtn">
         ${this.autoScrollEnabled ? "⏸ توقف اسکرول خودکار" : "▶ فعال‌سازی اسکرول خودکار"}
       </button>
     `;
@@ -235,6 +234,7 @@ class SidePanelApp {
   renderTabContent(meeting) {
     const el = document.getElementById("tabContent");
     const scrollContainer = document.getElementById("meetingDetail");
+    const autoScrollBtn = document.getElementById("autoScrollToggleBtn");
     const r = meeting.report;
     let html;
 
@@ -270,11 +270,6 @@ class SidePanelApp {
     void el.offsetWidth;
     el.classList.add("tab-anim");
 
-    // The bar widths are set here via the CSSOM (element.style.width), not
-    // via a string-interpolated inline "style" attribute in the HTML above.
-    // This guarantees a clean, clamped numeric value reaches the box model
-    // regardless of any HTML-parsing/formatting edge case, and is what
-    // actually fixed bars rendering at 100% width for every speaker.
     if (this.activeTab === "participation") {
       el.querySelectorAll(".participation-fill").forEach((fillEl) => {
         const raw = parseFloat(fillEl.dataset.pct);
@@ -283,6 +278,11 @@ class SidePanelApp {
           : 0;
         fillEl.style.width = `${clamped}%`;
       });
+    }
+
+    if (autoScrollBtn) {
+      autoScrollBtn.style.display =
+        this.activeTab === "transcript" ? "flex" : "none";
     }
 
     if (
