@@ -2,7 +2,7 @@ import { meetingDatabase } from "../db/database.js";
 import { Meeting } from "../db/models.js";
 import { meetingSummarizer } from "./summarizer.js";
 import { settingsStore } from "./settings-store.js";
-import { GitHubSyncClient } from "./github-sync.js";
+import { SyncProviderFactory } from "./sync-providers.js";
 import { MeetingReportMarkdownBuilder } from "../export/markdown-builder.js";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -41,7 +41,7 @@ async function handleMessage(message, sender) {
     case "meeting:importManualReport":
       return onImportManualReport(message.payload);
     case "meeting:sync":
-      return onSyncToGithub(message.payload);
+      return onSyncMeeting(message.payload);
     case "meeting:list":
       return meetingDatabase.listMeetings();
     case "meeting:search":
@@ -151,14 +151,15 @@ async function onImportManualReport({ meetingId, templateId, rawText }) {
   return meeting;
 }
 
-async function onSyncToGithub({ meetingId }) {
+/** Works with any of the three supported sync providers (GitHub/GitLab/Azure DevOps). */
+async function onSyncMeeting({ meetingId }) {
   const meeting = await meetingDatabase.getMeeting(meetingId);
   if (!meeting) throw new Error("جلسه پیدا نشد.");
   const settings = await settingsStore.getAll();
-  if (!settings.github?.enabled)
-    throw new Error("همگام‌سازی با GitHub در تنظیمات فعال نیست.");
+  if (!settings.sync?.enabled)
+    throw new Error("همگام‌سازی در تنظیمات فعال نیست.");
 
-  const client = new GitHubSyncClient(settings.github);
+  const client = SyncProviderFactory.create(settings.sync);
   const markdown = new MeetingReportMarkdownBuilder(meeting, {
     includeFullTranscript: settings.includeFullTranscript,
   }).build();

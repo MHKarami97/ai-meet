@@ -31,7 +31,7 @@ export class GeminiProvider extends AiProvider {
 
 /**
  * Gemini through Cloudflare's unified /ai/run endpoint (billed through the
- * Cloudflare account itself — no separate Google API key needed).
+ * Cloudflare account itself - no separate Google API key needed).
  *
  * Cloudflare replaced/superseded the old "Universal Endpoint" pattern
  * (gateway.ai.cloudflare.com/v1/{account}/{gateway}, now deprecated) with a

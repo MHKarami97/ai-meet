@@ -10,6 +10,32 @@ const PROVIDER_TYPE_LABELS = {
   [PROVIDER_TYPES.MANUAL]: "کپی دستی در هوش مصنوعی",
 };
 
+const SYNC_LABELS = {
+  github: {
+    baseUrl:
+      "آدرس پایه (فقط برای GitLab/Azure DevOps داخلی سازمان - خالی بگذارید یعنی نسخه‌ی عمومی)",
+    token: "Personal Access Token",
+    owner: "صاحب مخزن (owner)",
+    repo: "نام مخزن",
+    hint: "توکن باید دسترسی Contents: Read and write روی مخزن مقصد داشته باشد (Fine-grained PAT پیشنهاد می‌شود).",
+  },
+  gitlab: {
+    baseUrl:
+      "آدرس نمونه‌ی GitLab (خالی = gitlab.com؛ برای نسخه‌ی داخلی سازمان آدرس آن را بگذارید)",
+    token: "Personal/Project Access Token (با دسترسی api یا write_repository)",
+    owner: "گروه/فضای نام (namespace)",
+    repo: "مسیر پروژه (مثلاً group/project یا فقط project اگر owner را هم پر کرده‌اید)",
+    hint: "اگر GitLab داخلی سازمان دارید، آدرس کامل آن را در «آدرس پایه» وارد کنید؛ برای gitlab.com این فیلد را خالی بگذارید.",
+  },
+  "azure-devops": {
+    baseUrl: "آدرس Collection برای سرور داخلی/TFS (خالی = dev.azure.com ابری)",
+    token: "Personal Access Token",
+    owner: "نام سازمان (Organization) - فقط اگر آدرس پایه خالی است",
+    repo: "نام مخزن (Repository)",
+    hint: "برای Azure DevOps سرور داخلی سازمان، آدرس Collection را در «آدرس پایه» بگذارید (مثلاً https://tfs.mycompany.com/tfs/DefaultCollection). فیلد «پروژه» هم برای Azure DevOps الزامی است.",
+  },
+};
+
 class OptionsApp {
   constructor() {
     this.settings = null;
@@ -23,7 +49,7 @@ class OptionsApp {
     this.renderCustomTemplates();
     this.renderLanguage();
     this.renderExportSettings();
-    this.renderGithub();
+    this.renderSync();
 
     document
       .getElementById("addProviderBtn")
@@ -55,6 +81,12 @@ class OptionsApp {
     checkbox.checked = !!this.settings.includeFullTranscript;
     checkbox.addEventListener("change", () => {
       this.settings.includeFullTranscript = checkbox.checked;
+    });
+
+    const hideCaptions = document.getElementById("hideCaptionsPanel");
+    hideCaptions.checked = !!this.settings.hideCaptionsPanel;
+    hideCaptions.addEventListener("change", () => {
+      this.settings.hideCaptionsPanel = hideCaptions.checked;
     });
   }
 
@@ -110,13 +142,12 @@ class OptionsApp {
           <input type="text" data-field="accountId" value="${this.esc(p.accountId || "")}" placeholder="Cloudflare Account ID">
           <input type="text" data-field="gatewayId" value="${this.esc(p.gatewayId || "")}" placeholder="Gateway ID (اختیاری، پیش‌فرض default)">
         </div>
-        <p class="manual-note">این مسیر از اندپوینت یکپارچه‌ی جدید Cloudflare (<code>/ai/run</code>) استفاده می‌کند: به یک Gemini API key نیازی نیست؛ فقط یک <b>Cloudflare API Token</b> با دسترسی <b>Account &gt; Workers AI &gt; Read</b> کافی است و هزینه از طریق حساب Cloudflare خودتان (Unified Billing) محاسبه می‌شود.</p>`
+        <p class="manual-note">این مسیر از اندپوینت یکپارچه‌ی جدید Cloudflare (<code>/ai/run</code>) استفاده می‌کند: به یک Gemini API key نیازی نیست؛ فقط یک <b>Cloudflare API Token</b> با دسترسی <b>Account &gt; Workers AI &gt; Read</b> کافی است.</p>`
             : ""
         }`
         }
       `;
 
-      // Text/textarea fields: save as the user types, no re-render needed.
       card
         .querySelectorAll(
           'input[type="text"][data-field], textarea[data-field]',
@@ -126,8 +157,6 @@ class OptionsApp {
             this.onProviderFieldChange(index, input),
           );
         });
-
-      // Radio ("فعال"): only needs to update the active provider id, no re-render.
       card
         .querySelectorAll('input[type="radio"][data-field]')
         .forEach((radio) => {
@@ -135,15 +164,6 @@ class OptionsApp {
             this.onProviderFieldChange(index, radio),
           );
         });
-
-      // The "type" <select> is the only field that changes which other
-      // fields are shown, so it's the only one that needs a re-render.
-      // Previously this used BOTH the 'input' and 'change' events, and
-      // rebuilt the whole card list synchronously inside that same event —
-      // in Chromium this can make the <select> snap back to its old value
-      // because the rebuild happens before the browser finishes committing
-      // the selection. Listening only to 'change' and deferring the
-      // re-render with a microtask (setTimeout 0) fixes that.
       card.querySelectorAll("select[data-field]").forEach((select) => {
         select.addEventListener("change", () => {
           const provider = this.settings.providers[index];
@@ -151,7 +171,6 @@ class OptionsApp {
           setTimeout(() => this.renderProviders(), 0);
         });
       });
-
       card
         .querySelector('[data-action="remove"]')
         .addEventListener("click", () => {
@@ -246,35 +265,64 @@ class OptionsApp {
     });
   }
 
-  renderGithub() {
-    document.getElementById("githubEnabled").checked =
-      !!this.settings.github.enabled;
-    document.getElementById("githubToken").value =
-      this.settings.github.token || "";
-    document.getElementById("githubOwner").value =
-      this.settings.github.owner || "";
-    document.getElementById("githubRepo").value =
-      this.settings.github.repo || "";
-    document.getElementById("githubBranch").value =
-      this.settings.github.branch || "main";
-    document.getElementById("githubPathPrefix").value =
-      this.settings.github.pathPrefix || "meetings";
+  renderSync() {
+    const sync = this.settings.sync;
+    document.getElementById("syncEnabled").checked = !!sync.enabled;
+    document.getElementById("syncProvider").value = sync.provider || "github";
+    document.getElementById("syncBaseUrl").value = sync.baseUrl || "";
+    document.getElementById("syncToken").value = sync.token || "";
+    document.getElementById("syncOwner").value = sync.owner || "";
+    document.getElementById("syncProject").value = sync.project || "";
+    document.getElementById("syncRepo").value = sync.repo || "";
+    document.getElementById("syncBranch").value = sync.branch || "main";
+    document.getElementById("syncPathPrefix").value =
+      sync.pathPrefix || "meetings";
+
+    document.getElementById("syncEnabled").addEventListener("change", (e) => {
+      this.settings.sync.enabled = e.target.checked;
+    });
+    document.getElementById("syncProvider").addEventListener("change", (e) => {
+      this.settings.sync.provider = e.target.value;
+      this.applySyncLabels(e.target.value);
+    });
+    document.getElementById("syncBaseUrl").addEventListener("input", (e) => {
+      this.settings.sync.baseUrl = e.target.value;
+    });
+    document.getElementById("syncToken").addEventListener("input", (e) => {
+      this.settings.sync.token = e.target.value;
+    });
+    document.getElementById("syncOwner").addEventListener("input", (e) => {
+      this.settings.sync.owner = e.target.value;
+    });
+    document.getElementById("syncProject").addEventListener("input", (e) => {
+      this.settings.sync.project = e.target.value;
+    });
+    document.getElementById("syncRepo").addEventListener("input", (e) => {
+      this.settings.sync.repo = e.target.value;
+    });
+    document.getElementById("syncBranch").addEventListener("input", (e) => {
+      this.settings.sync.branch = e.target.value;
+    });
+    document.getElementById("syncPathPrefix").addEventListener("input", (e) => {
+      this.settings.sync.pathPrefix = e.target.value;
+    });
+
+    this.applySyncLabels(sync.provider || "github");
   }
 
-  collectGithub() {
-    return {
-      enabled: document.getElementById("githubEnabled").checked,
-      token: document.getElementById("githubToken").value.trim(),
-      owner: document.getElementById("githubOwner").value.trim(),
-      repo: document.getElementById("githubRepo").value.trim(),
-      branch: document.getElementById("githubBranch").value.trim() || "main",
-      pathPrefix:
-        document.getElementById("githubPathPrefix").value.trim() || "meetings",
-    };
+  /** Swaps field labels/placeholders and shows the "پروژه" row only for Azure DevOps. */
+  applySyncLabels(provider) {
+    const labels = SYNC_LABELS[provider] || SYNC_LABELS.github;
+    document.getElementById("syncBaseUrlLabel").textContent = labels.baseUrl;
+    document.getElementById("syncTokenLabel").textContent = labels.token;
+    document.getElementById("syncOwnerLabel").textContent = labels.owner;
+    document.getElementById("syncRepoLabel").textContent = labels.repo;
+    document.getElementById("syncHint").textContent = labels.hint;
+    document.getElementById("syncProjectRow").style.display =
+      provider === "azure-devops" ? "flex" : "none";
   }
 
   async save() {
-    this.settings.github = this.collectGithub();
     await settingsStore.update(this.settings);
     const status = document.getElementById("saveStatus");
     status.textContent = "✔ ذخیره شد";

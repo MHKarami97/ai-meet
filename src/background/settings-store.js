@@ -19,11 +19,16 @@ const DEFAULTS = {
   languageMode: "auto",
   defaultLanguage: "fa",
   includeFullTranscript: false,
-  github: {
+  hideCaptionsPanel: false,
+  sidebarCollapsed: false,
+  sync: {
     enabled: false,
+    provider: "github", // 'github' | 'gitlab' | 'azure-devops'
+    baseUrl: "", // self-hosted GitLab or on-prem Azure DevOps Server URL; empty = public SaaS
     token: "",
-    owner: "",
-    repo: "",
+    owner: "", // GitHub owner / GitLab namespace-or-group / Azure DevOps organization
+    repo: "", // GitHub repo / GitLab project path (e.g. "group/project") / Azure DevOps repository name
+    project: "", // Azure DevOps project name only (GitHub/GitLab ignore this)
     branch: "main",
     pathPrefix: "meetings",
   },

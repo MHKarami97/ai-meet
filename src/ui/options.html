@@ -14,7 +14,7 @@
 
     <section class="section">
       <h2>Providerهای هوش مصنوعی</h2>
-      <p class="hint">می‌توانید چند Provider تعریف کنید (Gemini، OpenAI، Cloudflare AI Gateway، یا حالت «بدون کلید»)
+      <p class="hint">می‌توانید چند Provider تعریف کنید (Gemini، OpenAI، Cloudflare، یا حالت «بدون کلید»)
         و هرکدام را برای جلسات مختلف انتخاب کنید. کلید API فقط در همین دستگاه ذخیره می‌شود.</p>
       <div id="providerList"></div>
       <button class="btn btn-secondary" id="addProviderBtn">+ افزودن Provider</button>
@@ -32,7 +32,7 @@
     </section>
 
     <section class="section">
-      <h2>زبان جلسه</h2>
+      <h2>زبان و رفتار روی صفحه‌ی Meet</h2>
       <div class="row">
         <label><input type="radio" name="languageMode" value="auto"> تشخیص خودکار از روی زیرنویس گوگل میت</label>
         <label><input type="radio" name="languageMode" value="manual"> تعیین دستی زبان</label>
@@ -47,6 +47,12 @@
       </div>
       <p class="hint">توجه: زبان زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).
       </p>
+      <div class="row">
+        <label><input type="checkbox" id="hideCaptionsPanel"> پنهان‌کردن پنل زیرنویس گوگل میت هنگام ضبط (فضایی از صفحه
+          اشغال نکند)</label>
+      </div>
+      <p class="hint">پیش‌فرض خاموش. زیرنویس همچنان در پس‌زمینه توسط افزونه خوانده می‌شود؛ فقط ظاهرش روی صفحه‌ی Meet جمع
+        می‌شود.</p>
     </section>
 
     <section class="section">
@@ -60,19 +66,33 @@
     </section>
 
     <section class="section">
-      <h2>همگام‌سازی با GitHub</h2>
-      <div class="row"><label><input type="checkbox" id="githubEnabled"> فعال‌سازی همگام‌سازی خودکار با GitHub</label>
+      <h2>همگام‌سازی با مخزن کد</h2>
+      <div class="row"><label><input type="checkbox" id="syncEnabled"> فعال‌سازی همگام‌سازی خودکار</label></div>
+      <div class="row">
+        <label>سرویس</label>
+        <select id="syncProvider">
+          <option value="github">GitHub</option>
+          <option value="gitlab">GitLab (gitlab.com یا نسخه‌ی داخلی سازمان)</option>
+          <option value="azure-devops">Azure DevOps (ابری یا سرور داخلی/TFS)</option>
+        </select>
       </div>
-      <div class="row"><label>Personal Access Token</label><input id="githubToken" type="password"
-          placeholder="ghp_..."></div>
-      <div class="row"><label>صاحب مخزن (owner)</label><input id="githubOwner" type="text" placeholder="MHKarami97">
+      <div class="row">
+        <label id="syncBaseUrlLabel">آدرس پایه (فقط برای GitLab/Azure DevOps داخلی سازمان - خالی بگذارید یعنی نسخه‌ی
+          عمومی)</label>
+        <input id="syncBaseUrl" type="text"
+          placeholder="مثلاً https://gitlab.mycompany.com یا https://tfs.mycompany.com/tfs/DefaultCollection">
       </div>
-      <div class="row"><label>نام مخزن</label><input id="githubRepo" type="text" placeholder="meeting-archive"></div>
-      <div class="row"><label>Branch</label><input id="githubBranch" type="text" value="main"></div>
-      <div class="row"><label>مسیر پایه</label><input id="githubPathPrefix" type="text" value="meetings"></div>
-      <p class="hint">توکن باید دسترسی Contents: Read and write روی مخزن مقصد داشته باشد (Fine-grained PAT پیشنهاد
-        می‌شود). توجه: فایل جدای <code>transcript.txt</code> که در گیت‌هاب ذخیره می‌شود، همیشه رونوشت کامل را دارد و
-        تابع تنظیم بالا نیست - آن یک نسخه پشتیبان کامل جداست.</p>
+      <div class="row"><label id="syncTokenLabel">Token</label><input id="syncToken" type="password"
+          placeholder="ghp_... / GitLab PAT / Azure DevOps PAT"></div>
+      <div class="row"><label id="syncOwnerLabel">صاحب مخزن / گروه / سازمان</label><input id="syncOwner" type="text"
+          placeholder="MHKarami97"></div>
+      <div class="row" id="syncProjectRow"><label>پروژه (فقط Azure DevOps)</label><input id="syncProject" type="text"
+          placeholder="نام پروژه در Azure DevOps"></div>
+      <div class="row"><label id="syncRepoLabel">نام مخزن</label><input id="syncRepo" type="text"
+          placeholder="meeting-archive"></div>
+      <div class="row"><label>Branch</label><input id="syncBranch" type="text" value="main"></div>
+      <div class="row"><label>مسیر پایه</label><input id="syncPathPrefix" type="text" value="meetings"></div>
+      <p class="hint" id="syncHint"></p>
     </section>
 
     <section class="section">
