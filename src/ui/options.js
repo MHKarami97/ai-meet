@@ -116,14 +116,42 @@ class OptionsApp {
         }
       `;
 
-      card.querySelectorAll("[data-field]").forEach((input) => {
-        input.addEventListener("input", () =>
-          this.onProviderFieldChange(index, input),
-        );
-        input.addEventListener("change", () =>
-          this.onProviderFieldChange(index, input),
-        );
+      // Text/textarea fields: save as the user types, no re-render needed.
+      card
+        .querySelectorAll(
+          'input[type="text"][data-field], textarea[data-field]',
+        )
+        .forEach((input) => {
+          input.addEventListener("input", () =>
+            this.onProviderFieldChange(index, input),
+          );
+        });
+
+      // Radio ("فعال"): only needs to update the active provider id, no re-render.
+      card
+        .querySelectorAll('input[type="radio"][data-field]')
+        .forEach((radio) => {
+          radio.addEventListener("change", () =>
+            this.onProviderFieldChange(index, radio),
+          );
+        });
+
+      // The "type" <select> is the only field that changes which other
+      // fields are shown, so it's the only one that needs a re-render.
+      // Previously this used BOTH the 'input' and 'change' events, and
+      // rebuilt the whole card list synchronously inside that same event —
+      // in Chromium this can make the <select> snap back to its old value
+      // because the rebuild happens before the browser finishes committing
+      // the selection. Listening only to 'change' and deferring the
+      // re-render with a microtask (setTimeout 0) fixes that.
+      card.querySelectorAll("select[data-field]").forEach((select) => {
+        select.addEventListener("change", () => {
+          const provider = this.settings.providers[index];
+          provider[select.dataset.field] = select.value;
+          setTimeout(() => this.renderProviders(), 0);
+        });
       });
+
       card
         .querySelector('[data-action="remove"]')
         .addEventListener("click", () => {
@@ -143,7 +171,6 @@ class OptionsApp {
       return;
     }
     provider[field] = input.value;
-    if (field === "type") this.renderProviders();
   }
 
   renderTemplateSelect() {
