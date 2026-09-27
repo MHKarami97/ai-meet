@@ -1,11 +1,3 @@
-/**
- * Prompt Template library (Strategy-style content objects consumed by MeetingSummarizer).
- * Each template targets a distinct meeting type so the AI extracts the right
- * signal (architecture decisions vs. sales next-steps vs. hiring verdicts, etc).
- * All templates share one strict JSON output contract so the rest of the app
- * (report renderer, exporters, GitHub sync) can stay provider-agnostic.
- */
-
 const JSON_SCHEMA_INSTRUCTION = `
 فقط و فقط یک JSON معتبر با دقیقاً این کلیدها برگردان (بدون Markdown، بدون توضیح اضافه، بدون بک‌تیک). اگر بخشی در جلسه مطرح نشده، آرایه‌ی خالی یا مقدار null بگذار ولی هیچ فیلدی را حذف نکن:
 {

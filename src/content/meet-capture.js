@@ -1,29 +1,3 @@
-/**
- * Reads Google Meet's own live-caption panel (set to Persian, English, etc. by
- * the user, or auto-attempted by this script) and streams each finalized
- * line to the background worker with a speaker label and timestamp.
- *
- * Google Meet's live ASR does not just append words to the current caption
- * line - it frequently REVISES the tail of the sentence as more audio
- * context arrives. Continuations are detected purely by TIME PROXIMITY: as
- * long as the same speaker keeps updating captions within
- * CONTINUATION_GAP_MS of the previous update, everything is merged into the
- * same evolving segment. A new segment only starts when the speaker changes
- * or there is a real pause longer than the gap.
- *
- * Recording does NOT start automatically: a floating toggle button lets the
- * user explicitly start/stop capturing, and it also opens Google Meet's own
- * Captions panel (best-effort) and the extension side panel on start, and
- * closes only the Captions panel on stop.
- *
- * If the user enables "hideCaptionsUi" in settings, the matched captions
- * container is visually hidden (element.style.display = 'none') for the
- * duration of the recording to free up screen space on the Meet page —
- * this does NOT stop capture, because a hidden element is still part of the
- * live DOM and MutationObserver keeps receiving its updates normally. Note:
- * this is unverified against any Meet-side "pause updates when hidden"
- * optimization Google might add in the future.
- */
 const CAPTION_CONTAINER_SELECTORS = [
   '[jsname="tgaKEf"]',
   '[jscontroller="KPn5nb"]',
@@ -47,6 +21,17 @@ const LANGUAGE_DISPLAY_NAMES = {
 };
 
 const CONTINUATION_GAP_MS = 7000;
+
+const BADGE_TEXT = {
+  fa: {
+    stopped: "AI Meet - برای شروع ضبط کلیک کنید",
+    recording: "AI Meet در حال ضبط - کلیک برای پایان",
+  },
+  en: {
+    stopped: "AI Meet - Click to start recording",
+    recording: "AI Meet recording - Click to stop",
+  },
+};
 
 function isRealCaptionLine(el) {
   if (el.children.length > 0) return false;
@@ -182,10 +167,33 @@ class MeetCaptionCapture {
     this.hideCaptionsUi = false;
     this.hiddenCaptionContainer = null;
     this.hiddenCaptionOriginalDisplay = "";
+    this.uiLanguage = "fa";
   }
 
-  init() {
+  async init() {
+    this.uiLanguage = await this.getUiLanguage();
+    this.watchUiLanguageChanges();
     this.renderBadge();
+  }
+
+  /** Reads settings.uiLanguage directly — no ES import (see file header). */
+  async getUiLanguage() {
+    const stored = await chrome.storage.local.get("settings");
+    const lang = stored.settings?.uiLanguage;
+    return BADGE_TEXT[lang] ? lang : "fa";
+  }
+
+  /** Keeps the floating badge's language in sync if changed from the options page while this Meet tab stays open. */
+  watchUiLanguageChanges() {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local" || !changes.settings) return;
+      const newLang = changes.settings.newValue?.uiLanguage;
+      const oldLang = changes.settings.oldValue?.uiLanguage;
+      if (newLang && newLang !== oldLang && BADGE_TEXT[newLang]) {
+        this.uiLanguage = newLang;
+        this.updateBadge();
+      }
+    });
   }
 
   async start() {
@@ -346,8 +354,7 @@ class MeetCaptionCapture {
     this.badgeEl = document.createElement("button");
     this.badgeEl.type = "button";
     this.badgeEl.className = "ai-meet-badge stopped";
-    this.badgeEl.innerHTML =
-      '<span class="dot"></span><span>AI Meet - برای شروع ضبط کلیک کنید</span>';
+    this.badgeEl.innerHTML = BADGE_TEXT[this.uiLanguage].stopped;
     this.badgeEl.addEventListener("click", () => {
       if (!this.isRecording) {
         chrome.runtime.sendMessage({ type: "sidepanel:open" }).catch(() => {});
@@ -362,8 +369,8 @@ class MeetCaptionCapture {
     if (!this.badgeEl) return;
     this.badgeEl.classList.toggle("stopped", !this.isRecording);
     this.badgeEl.innerHTML = this.isRecording
-      ? '<span class="dot"></span><span>AI Meet در حال ضبط - کلیک برای پایان</span>'
-      : '<span class="dot"></span><span>AI Meet - برای شروع ضبط کلیک کنید</span>';
+      ? BADGE_TEXT[this.uiLanguage].recording
+      : BADGE_TEXT[this.uiLanguage].stopped;
   }
 
   async getSettings() {
