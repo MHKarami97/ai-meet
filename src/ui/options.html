@@ -1,44 +1,40 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-
 <head>
   <meta charset="utf-8">
-  <title>تنظیمات AI Meet</title>
+  <title>AI Meet</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="options.css">
 </head>
-
 <body>
   <div class="page">
-    <h1>⚙️ تنظیمات AI Meet</h1>
+    <h1 data-i18n="app_name">AI Meet</h1>
 
     <section class="section">
-      <h2>Providerهای هوش مصنوعی</h2>
-      <p class="hint">می‌توانید چند Provider تعریف کنید (Gemini، OpenAI، Cloudflare، یا حالت «بدون کلید»)
-        و هرکدام را برای جلسات مختلف انتخاب کنید. کلید API فقط در همین دستگاه ذخیره می‌شود.</p>
+      <h2 data-i18n="options_provider_heading">پروویدر هوش مصنوعی</h2>
+      <p class="hint" data-i18n="options_provider_hint">می‌توانید چند Provider تعریف کنید (Gemini، OpenAI، Cloudflare، یا حالت «بدون کلید») و هرکدام را برای جلسات مختلف انتخاب کنید. کلید API فقط در همین دستگاه ذخیره می‌شود.</p>
       <div id="providerList"></div>
-      <button class="btn btn-secondary" id="addProviderBtn">+ افزودن Provider</button>
+      <button class="btn btn-secondary" id="addProviderBtn" data-i18n="options_add_provider">افزودن Provider</button>
     </section>
 
     <section class="section">
-      <h2>قالب پرامپت پیش‌فرض</h2>
-      <p class="hint">برای هر جلسه می‌توانید قالب را عوض کنید؛ این فقط پیش‌فرض ابتدایی است.</p>
+      <h2 data-i18n="options_template_heading">قالب پرامپت پیش‌فرض</h2>
+      <p class="hint" data-i18n="options_template_hint">برای هر جلسه می‌توانید قالب را عوض کنید؛ این فقط پیش‌فرض ابتدایی است.</p>
       <div class="row">
-        <label>قالب پیش‌فرض</label>
         <select id="defaultTemplateSelect"></select>
       </div>
       <div id="templateList"></div>
-      <button class="btn btn-secondary" id="addTemplateBtn">+ افزودن قالب اختصاصی</button>
+      <button class="btn btn-secondary" id="addTemplateBtn" data-i18n="options_add_template">افزودن قالب سفارشی</button>
     </section>
 
     <section class="section">
-      <h2>زبان و نمایش زیرنویس در Google Meet</h2>
+      <h2 data-i18n="options_meet_heading">زبان زیرنویس Google Meet</h2>
       <div class="row">
-        <label><input type="radio" name="languageMode" value="auto"> تشخیص خودکار از روی زیرنویس گوگل میت</label>
-        <label><input type="radio" name="languageMode" value="manual"> تعیین دستی زبان</label>
+        <label><input type="radio" name="languageMode" value="auto"> <span data-i18n="options_language_mode_auto">تشخیص خودکار زبان</span></label>
+        <label><input type="radio" name="languageMode" value="manual"> <span data-i18n="options_language_mode_manual">انتخاب دستی زبان</span></label>
       </div>
       <div class="row">
-        <label>زبان پیش‌فرض (در حالت دستی)</label>
+        <label data-i18n="options_language_meet_heading">زبان</label>
         <select id="defaultLanguageSelect">
           <option value="fa">فارسی</option>
           <option value="en">English</option>
@@ -46,76 +42,94 @@
         </select>
       </div>
       <div class="row">
-        <label><input type="checkbox" id="hideCaptionsUi"> پنهان‌کردن نمایش زیرنویس گوگل میت روی صفحه در حین ضبط</label>
+        <label><input type="checkbox" id="hideCaptionsUi"> <span data-i18n="options_hide_captions_label">پنهان‌سازی پنل زیرنویس روی صفحه‌ی Meet</span></label>
       </div>
-      <p class="hint">پیش‌فرض خاموش است. اگر روشن باشد، جای کادر زیرنویس روی صفحه‌ی Google Meet در حین ضبط آزاد می‌شود؛
-        ضبط و رونوشت‌برداری افزونه بدون تغییر ادامه دارد، چون از روی DOM همان کادر (حتی مخفی) خوانده می‌شود. توجه: زبان
-        زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).</p>
+      <p class="hint" data-i18n="options_hide_captions_hint">پیش‌فرض خاموش است. اگر روشن باشد، جای کادر زیرنویس روی صفحه‌ی Google Meet در حین ضبط آزاد می‌شود؛ ضبط و رونوشت‌برداری افزونه بدون تغییر ادامه دارد، چون از روی DOM همان کادر (حتی مخفی) خوانده می‌شود. توجه: زبان زیرنویس زنده باید از داخل Google Meet روی همان زبان تنظیم شود (Settings &gt; Captions).</p>
     </section>
 
     <section class="section">
-      <h2>تنظیمات خروجی</h2>
+      <h2 data-i18n="options_export_heading">تنظیمات خروجی</h2>
       <div class="row">
-        <label><input type="checkbox" id="includeFullTranscript"> افزودن متن کامل جلسه به خروجی‌های TXT، Markdown، Word
-          و PDF</label>
+        <label><input type="checkbox" id="includeFullTranscript"> <span data-i18n="options_include_transcript_label">افزودن رونوشت کامل به فایل‌های TXT، Markdown، Word و PDF</span></label>
       </div>
-      <p class="hint">پیش‌فرض خاموش است - یعنی این چهار خروجی فقط شامل خلاصه، تصمیمات، اقدامات و تحلیل پیشرفته می‌شوند،
-        نه رونوشت کامل جلسه.</p>
+      <p class="hint" data-i18n="options_include_transcript_hint">پیش‌فرض خاموش است - یعنی این چهار خروجی فقط شامل خلاصه، تصمیمات، اقدامات و تحلیل پیشرفته می‌شوند، نه رونوشت کامل جلسه.</p>
     </section>
 
     <section class="section">
-      <h2>همگام‌سازی با مخزن کد</h2>
-      <div class="row"><label><input type="checkbox" id="syncEnabled"> فعال‌سازی همگام‌سازی</label></div>
+      <h2 data-i18n="options_sync_heading">همگام‌سازی با Git</h2>
       <div class="row">
-        <label>سرویس</label>
+        <label><input type="checkbox" id="syncEnabled"> <span data-i18n="options_sync_enable_label">فعال‌سازی همگام‌سازی خودکار</span></label>
+      </div>
+      <div class="row">
+        <label data-i18n="sync_github_service">سرویس</label>
         <select id="syncProvider">
           <option value="github">GitHub</option>
-          <option value="gitlab">GitLab (gitlab.com یا نسخه‌ی داخلی سازمان)</option>
-          <option value="azure-devops">Azure DevOps (ابری یا سرور داخلی/TFS)</option>
+          <option value="gitlab">GitLab</option>
+          <option value="azure-devops">Azure DevOps / TFS</option>
         </select>
       </div>
       <div class="row">
-        <label id="syncBaseUrlLabel">آدرس پایه (فقط برای GitLab/Azure DevOps داخلی سازمان - خالی بگذارید یعنی نسخه‌ی
-          عمومی)</label>
-        <input id="syncBaseUrl" type="text"
-          placeholder="مثلاً https://gitlab.mycompany.com یا https://tfs.mycompany.com/tfs/DefaultCollection">
+        <label id="syncBaseUrlLabel">آدرس پایه</label>
+        <input id="syncBaseUrl" type="text" placeholder="https://gitlab.mycompany.com">
       </div>
-      <div class="row"><label id="syncTokenLabel">Token</label><input id="syncToken" type="password"
-          placeholder="ghp_... / GitLab PAT / Azure DevOps PAT"></div>
-      <div class="row"><label id="syncOwnerLabel">صاحب مخزن / گروه / سازمان</label><input id="syncOwner" type="text"
-          placeholder="MHKarami97"></div>
-      <div class="row" id="syncProjectRow"><label>پروژه (فقط Azure DevOps)</label><input id="syncProject" type="text"
-          placeholder="نام پروژه در Azure DevOps"></div>
-      <div class="row"><label id="syncRepoLabel">نام مخزن</label><input id="syncRepo" type="text"
-          placeholder="meeting-archive"></div>
-      <div class="row"><label>Branch</label><input id="syncBranch" type="text" value="main"></div>
-      <div class="row"><label>مسیر پایه</label><input id="syncPathPrefix" type="text" value="meetings"></div>
+      <div class="row">
+        <label id="syncTokenLabel">Token</label>
+        <input id="syncToken" type="password" placeholder="ghp_...">
+      </div>
+      <div class="row">
+        <label id="syncOwnerLabel">صاحب مخزن</label>
+        <input id="syncOwner" type="text" placeholder="MHKarami97">
+      </div>
+      <div class="row" id="syncProjectRow">
+        <label data-i18n="sync_project_label">پروژه (فقط Azure DevOps)</label>
+        <input id="syncProject" type="text" placeholder="AI Meet">
+      </div>
+      <div class="row">
+        <label id="syncRepoLabel">نام مخزن</label>
+        <input id="syncRepo" type="text" placeholder="meeting-archive">
+      </div>
+      <div class="row">
+        <label data-i18n="sync_branch_label">شاخه</label>
+        <input id="syncBranch" type="text" value="main">
+      </div>
+      <div class="row">
+        <label data-i18n="sync_pathprefix_label">پیشوند مسیر</label>
+        <input id="syncPathPrefix" type="text" value="meetings/">
+      </div>
       <p class="hint" id="syncHint"></p>
     </section>
 
     <section class="section">
-      <h2>ظاهر</h2>
+      <h2 data-i18n="options_language_heading">زبان افزونه</h2>
+      <p class="hint" data-i18n="options_language_hint">زبان تمام صفحات این افزونه (تنظیمات و پنل کناری) را تغییر می‌دهد؛ مستقل از زبان مرورگر.</p>
       <div class="row">
-        <label><input type="radio" name="theme" value="dark"> تیره</label>
-        <label><input type="radio" name="theme" value="light"> روشن</label>
+        <select id="uiLanguageSelect">
+          <option value="fa" data-i18n="options_language_fa">فارسی</option>
+          <option value="en" data-i18n="options_language_en">English</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 data-i18n="options_theme_heading">پوسته</h2>
+      <div class="row">
+        <label><input type="radio" name="theme" value="dark"> <span data-i18n="options_theme_dark">تیره</span></label>
+        <label><input type="radio" name="theme" value="light"> <span data-i18n="options_theme_light">روشن</span></label>
       </div>
     </section>
 
     <section class="section about-section">
-      <h2>درباره</h2>
+      <h2 data-i18n="options_about_heading">درباره</h2>
       <p class="hint">
-        افزونه <b>AI Meet</b> - ضبط، رونوشت‌برداری و خلاصه‌سازی هوشمند جلسات Google Meet با پشتیبانی کامل فارسی.<br>
+        <b>AI Meet</b> - <span data-i18n="options_about_text">ضبط، رونوشت‌برداری و خلاصه‌سازی هوشمند جلسات Google Meet با پشتیبانی کامل فارسی.</span><br>
         <a href="https://mhkarami97.ir" target="_blank" rel="noopener">mhkarami97.ir</a><br>
-        <a href="https://github.com/MHKarami97/ai-meet" target="_blank"
-          rel="noopener">github.com/MHKarami97/ai-meet</a><br>
-        نسخه: 1.0.0
+        <a href="https://github.com/MHKarami97/ai-meet" target="_blank" rel="noopener">github.com/MHKarami97/ai-meet</a><br>
       </p>
     </section>
 
-    <button class="btn btn-primary" id="saveBtn">ذخیره تنظیمات</button>
+    <button class="btn btn-primary" id="saveBtn" data-i18n="options_save">ذخیره تنظیمات</button>
     <span id="saveStatus"></span>
   </div>
   <script type="module" src="options.js"></script>
 </body>
-
 </html>

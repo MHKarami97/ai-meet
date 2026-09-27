@@ -5,11 +5,12 @@ var SECRETS_STORAGE_KEY = 'settingsSecretsEncrypted';
 
 var DEFAULTS = Object.freeze({
   theme: 'dark',
+  uiLanguage: 'fa', // 'fa' | 'en' — in-app UI language, user-switchable from Options
   providers: [
     {
       id: 'manual-default',
       type: 'manual',
-      name: 'دستی (کپی/پیست)',
+      name: 'manual',
       baseUrl: '',
       model: '',
     },
@@ -71,7 +72,8 @@ export class SettingsStore {
   /**
    * Persists a partial settings patch. Secret fields (provider
    * apiKey/accountId/gatewayId, sync.token) are AES-GCM encrypted before
-   * being written; everything else is written as plain JSON.
+   * being written; everything else (including uiLanguage) is written as
+   * plain JSON.
    * @param {object} partial
    * @returns {Promise<object>} the merged settings object after the write
    */
@@ -122,15 +124,27 @@ export class SettingsStore {
   /**
    * Registers a live callback that fires whenever the theme changes in
    * storage (e.g. from the options page while a side panel stays open).
-   * Theme is non-secret and unaffected by the encryption layer above.
-   * @param {(theme: string) => void} callback
    */
   onThemeChange(callback) {
+    this._onFieldChange('theme', callback);
+  }
+
+  /**
+   * Registers a live callback that fires whenever the in-app UI language
+   * changes in storage (e.g. saved from the options page while a side
+   * panel stays open elsewhere).
+   * @param {(lang: string) => void} callback
+   */
+  onLanguageChange(callback) {
+    this._onFieldChange('uiLanguage', callback);
+  }
+
+  _onFieldChange(field, callback) {
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area !== 'local' || !changes[LOCAL_STORAGE_KEY]) return;
-      var newTheme = changes[LOCAL_STORAGE_KEY].newValue && changes[LOCAL_STORAGE_KEY].newValue.theme;
-      var oldTheme = changes[LOCAL_STORAGE_KEY].oldValue && changes[LOCAL_STORAGE_KEY].oldValue.theme;
-      if (newTheme && newTheme !== oldTheme) callback(newTheme);
+      var newValue = changes[LOCAL_STORAGE_KEY].newValue && changes[LOCAL_STORAGE_KEY].newValue[field];
+      var oldValue = changes[LOCAL_STORAGE_KEY].oldValue && changes[LOCAL_STORAGE_KEY].oldValue[field];
+      if (newValue && newValue !== oldValue) callback(newValue);
     });
   }
 }

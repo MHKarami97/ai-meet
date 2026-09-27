@@ -60,7 +60,7 @@ async function handleMessage(message, sender) {
 async function onMeetingStart({ meetUrl, language }) {
   const settings = await settingsStore.getAll();
   const meeting = new Meeting({
-    title: `جلسه ${new Date().toLocaleString("fa-IR")}`,
+    title: ` ${new Date().toLocaleString("fa-IR")}`,
     meetUrl,
     startedAt: new Date().toISOString(),
     language: language || settings.defaultLanguage,

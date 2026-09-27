@@ -31,7 +31,8 @@
       "matches": ["https://meet.google.com/*"],
       "js": ["src/content/meet-capture.js"],
       "css": ["src/content/meet-capture.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "type": "module"
     }
   ],
   "side_panel": { "default_path": "src/ui/sidepanel.html" },

@@ -1,29 +1,29 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
-
 <head>
   <meta charset="utf-8">
   <title>AI Meet</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="sidepanel.css">
 </head>
-
 <body>
   <div class="app">
     <header class="app-header">
-      <div class="brand"><span class="logo-dot"></span> AI Meet</div>
+      <div class="brand"><span class="logo-dot"></span><span data-i18n="app_name">AI Meet</span></div>
       <div class="header-actions">
-        <button id="toggleListBtn" class="icon-btn" title="کوچک/بزرگ‌کردن لیست جلسات">☰</button>
-        <button id="openOptionsBtn" class="icon-btn" title="تنظیمات">⚙️</button>
+        <button id="toggleListBtn" class="icon-btn" title="نمایش/پنهان‌سازی لیست جلسات" data-i18n-title="sidepanel_toggle_list_title">☰</button>
+        <button id="openOptionsBtn" class="icon-btn" title="تنظیمات" data-i18n-title="sidepanel_open_options_title">⚙</button>
       </div>
     </header>
+
     <div class="search-row">
-      <input id="searchInput" type="text" placeholder="جست‌وجو در تاریخچه جلسات...">
+      <input id="searchInput" type="text" placeholder="جست‌وجو در جلسات..." data-i18n-placeholder="sidepanel_search_placeholder">
     </div>
+
     <div class="layout">
       <aside class="meeting-list" id="meetingList"></aside>
       <main class="meeting-detail" id="meetingDetail">
-        <div class="empty-state">هنوز جلسه‌ای ثبت نشده. وارد Google Meet شوید تا ضبط رونوشت خودکار شروع شود.</div>
+        <div class="empty-state" data-i18n="sidepanel_empty_state">هنوز جلسه‌ای ثبت نشده. وارد Google Meet شوید تا ضبط رونوشت خودکار شروع شود.</div>
       </main>
     </div>
   </div>
@@ -31,24 +31,23 @@
   <div class="modal-backdrop" id="manualModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>حالت بدون کلید - کپی دستی</h3>
+        <h3 data-i18n="sidepanel_manual_modal_title">خلاصه‌سازی دستی</h3>
         <button class="icon-btn" id="closeManualModal">✕</button>
       </div>
-      <p class="hint">۱) متن زیر را کپی کنید. ۲) در هر چت هوش مصنوعی (ChatGPT, Gemini, Claude, ...) بچسبانید و اجرا
-        کنید.
-        ۳) کل پاسخ آن (باید یک JSON باشد) را در کادر پایین بچسبانید و روی «پردازش» بزنید.</p>
-      <label class="modal-label">متن آماده برای هوش مصنوعی</label>
-      <textarea id="manualPromptBox" rows="10" readonly></textarea>
-      <button class="btn btn-secondary" id="copyPromptBtn">📋 کپی متن</button>
+      <p class="hint" data-i18n="sidepanel_manual_modal_hint">۱) متن زیر را کپی کنید. ۲) در هر چت هوش مصنوعی (ChatGPT, Gemini, Claude, ...) بچسبانید و اجرا کنید. ۳) کل پاسخ آن (باید یک JSON باشد) را در کادر پایین بچسبانید و روی «پردازش» بزنید.</p>
 
-      <label class="modal-label m-t-14">پاسخ هوش مصنوعی را اینجا بچسبانید</label>
-      <textarea id="manualResultBox" rows="10" placeholder="پاسخ JSON مدل را اینجا paste کنید..."></textarea>
-      <button class="btn btn-primary" id="processManualBtn">پردازش و ساخت گزارش</button>
+      <label class="modal-label" data-i18n="sidepanel_manual_label_prompt">پرامپت آماده</label>
+      <textarea id="manualPromptBox" rows="10" readonly></textarea>
+      <button class="btn btn-secondary" id="copyPromptBtn" data-i18n="sidepanel_copy_prompt">کپی پرامپت</button>
+
+      <label class="modal-label m-t-14" data-i18n="sidepanel_manual_label_result">پاسخ AI</label>
+      <textarea id="manualResultBox" rows="10" placeholder="پاسخ JSON را اینجا پیست کن..." data-i18n-placeholder="sidepanel_manual_result_placeholder"></textarea>
+
+      <button class="btn btn-primary" id="processManualBtn" data-i18n="sidepanel_process_manual">پردازش پاسخ</button>
       <p id="manualError" class="error-text"></p>
     </div>
   </div>
 
   <script type="module" src="sidepanel.js"></script>
 </body>
-
 </html>
