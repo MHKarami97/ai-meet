@@ -126,7 +126,7 @@ class OptionsApp {
             ? '<p class="manual-note">این Provider هیچ کلیدی لازم ندارد. هنگام ساخت گزارش، افزونه یک متن آماده برای کپی به شما می‌دهد تا در هر چت هوش مصنوعی (ChatGPT، Gemini، Claude و...) بچسبانید و پاسخ را برگردانید.</p>'
             : `
         <div class="row-inline" style="margin-top:8px">
-          <input type="text" data-field="apiKey" value="${this.esc(p.apiKey || "")}" placeholder="${isCloudflare ? "Cloudflare API Token (نه کلید Gemini)" : "API Key"}">
+          <input type="password" data-field="apiKey" value="${this.esc(p.apiKey || "")}" placeholder="${isCloudflare ? "Cloudflare API Token (نه کلید Gemini)" : "API Key"}">
           <input type="text" data-field="model" value="${this.esc(p.model || "")}" placeholder="${isCloudflare ? "model (مثلاً google/gemini-2.5-flash)" : "model (مثلاً gemini-2.5-flash)"}">
         </div>
         ${p.type === PROVIDER_TYPES.OPENAI_COMPATIBLE ? `<div class="row-inline" style="margin-top:8px"><input type="text" data-field="baseUrl" value="${this.esc(p.baseUrl || "")}" placeholder="Base URL (پیش‌فرض https://api.openai.com/v1)"></div>` : ""}

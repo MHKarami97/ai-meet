@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "AI Meet",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "default_locale": "fa",
   "description": "__MSG_extDescription__",
   "permissions": [
@@ -10,7 +10,6 @@
     "unlimitedStorage",
     "sidePanel",
     "activeTab",
-    "scripting",
     "alarms",
     "downloads",
     "clipboardWrite"
