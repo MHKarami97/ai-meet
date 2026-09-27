@@ -292,14 +292,16 @@ class SidePanelApp {
     if (this.activeTab === "summary") {
       html = this.renderSummaryTab(r);
     } else if (this.activeTab === "actions") {
-      html = `<div class="card">${(r?.actionItems || [])
-        .map(
-          (a) => `<div class="action-item">
-            <input type="checkbox" ${a.done ? "checked disabled" : ""}>
-            <div>${this.esc(a.description)}<small>${this.esc(a.owner)} - ${this.esc(a.dueDate)}</small></div>
-          </div>`,
-        )
-        .join("")}</div>`;
+      html = r?.actionItems?.length
+        ? `<div class="card">${r.actionItems
+            .map(
+              (a) => `<div class="action-item">
+                <input type="checkbox" ${a.done ? "checked disabled" : ""}>
+                <div>${this.esc(a.description)}<small>${this.esc(a.owner)}${a.owner && a.dueDate ? " - " : ""}${this.esc(a.dueDate)}</small></div>
+              </div>`,
+            )
+            .join("")}</div>`
+        : `<div class="card"><p>${this.esc(i18n.t("sidepanel_no_analysis"))}</p></div>`;
     } else if (this.activeTab === "participation") {
       html = this.renderParticipationTab(meeting);
     } else if (this.activeTab === "analysis") {
@@ -363,7 +365,10 @@ class SidePanelApp {
   }
 
   renderSummaryTab(r) {
-    const sectionsHtml = (r?.sections || [])
+    if (!r)
+      return `<div class="card"><p>${this.esc(i18n.t("sidepanel_no_analysis"))}</p></div>`;
+
+    const sectionsHtml = (r.sections || [])
       .map((s) => {
         const badges = [
           s.type
@@ -376,10 +381,11 @@ class SidePanelApp {
         return `<div class="card"><h3>${this.esc(s.title)} ${badges}</h3><p>${this.esc(s.content)}</p></div>`;
       })
       .join("");
-    return `<div class="card"><h3>${this.esc(i18n.t("sidepanel_executive_summary_heading"))}</h3><p>${this.esc(r?.executiveSummary)}</p></div>${sectionsHtml}
-      <div class="card"><h3>${this.esc(i18n.t("sidepanel_key_decisions_heading"))}</h3><ul>${(r?.keyDecisions || []).map((d) => `<li>${this.esc(d)}</li>`).join("")}</ul></div>
-      <div class="card"><h3>${this.esc(i18n.t("sidepanel_open_questions_heading"))}</h3><ul>${(r?.openQuestions || []).map((q) => `<li>${this.esc(q)}</li>`).join("")}</ul></div>
-      <div class="card"><h3>${this.esc(i18n.t("sidepanel_risks_heading"))}</h3><ul>${(r?.risks || []).map((rk) => `<li>${this.esc(rk)}</li>`).join("")}</ul></div>`;
+
+    return `<div class="card"><h3>${this.esc(i18n.t("sidepanel_executive_summary_heading"))}</h3><p>${this.esc(r.executiveSummary)}</p></div>${sectionsHtml}
+      <div class="card"><h3>${this.esc(i18n.t("sidepanel_key_decisions_heading"))}</h3><ul>${(r.keyDecisions || []).map((d) => `<li>${this.esc(d)}</li>`).join("")}</ul></div>
+      <div class="card"><h3>${this.esc(i18n.t("sidepanel_open_questions_heading"))}</h3><ul>${(r.openQuestions || []).map((q) => `<li>${this.esc(q)}</li>`).join("")}</ul></div>
+      <div class="card"><h3>${this.esc(i18n.t("sidepanel_risks_heading"))}</h3><ul>${(r.risks || []).map((rk) => `<li>${this.esc(rk)}</li>`).join("")}</ul></div>`;
   }
 
   renderAnalysisTab(r) {
