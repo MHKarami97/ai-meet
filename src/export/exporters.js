@@ -327,16 +327,12 @@ export class WordExporter extends BaseExporter {
 
     return (
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-      '<head><meta charset="utf-8"><title>' +
-      escapeHtml(meeting.title) +
-      " - mhkarami97.ir</title></head>" +
+      '<head><meta charset="utf-8">' +
+      "</head>" +
       '<body dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif">' +
       "<h1>" +
       escapeHtml(meeting.title) +
-      "</h1>" +
-      "<h2>مشارکت گویندگان</h2><ul>" +
-      participationListHtml(meeting) +
-      "</ul>" +
+      "</h1>" +     
       extendedAnalysisHtml(meeting) +
       "<h2>خلاصه اجرایی</h2><p>" +
       escapeHtml((r && r.executiveSummary) || "-") +
@@ -352,6 +348,9 @@ export class WordExporter extends BaseExporter {
       "</ul>" +
       "<h2>ریسک‌ها</h2><ul>" +
       risks +
+      "</ul>" +
+      "<h2>مشارکت گویندگان</h2><ul>" +
+      participationListHtml(meeting) +
       "</ul>" +
       segmentsHtml +
       '<hr><p style="font-size:11px;color:#888">AI Meet - mhkarami97.ir</p>' +
@@ -410,24 +409,22 @@ export class PdfExporter extends BaseExporter {
       '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">' +
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap">' +
       "<style>body{font-family:Vazirmatn,Tahoma,sans-serif;padding:32px;line-height:1.8}h1{color:#4c1d95}h2{color:#2563eb;border-bottom:1px solid #eee;padding-bottom:4px}.site-footer{margin-top:24px;padding-top:8px;border-top:1px solid #eee;font-size:11px;color:#888;text-align:center}</style>" +
-      "<title>mhkarami97.ir - " +
-      escapeHtml(meeting.title) +
-      "</title></head><body>" +
+      "</head><body>" +
       "<h1>" +
       escapeHtml(meeting.title) +
       "</h1>" +
-      "<h2>مشارکت گویندگان</h2><ul>" +
-      participationListHtml(meeting) +
-      "</ul>" +
-      extendedAnalysisHtml(meeting) +
       "<h2>خلاصه اجرایی</h2><p>" +
       escapeHtml((r && r.executiveSummary) || "-") +
-      "</p>" +
+      "</p>" +     
+      extendedAnalysisHtml(meeting) +      
       "<h2>تصمیمات کلیدی</h2><ul>" +
       decisions +
       "</ul>" +
       "<h2>اقدامات</h2><ul>" +
       actions +
+      "</ul>" +
+       "<h2>مشارکت گویندگان</h2><ul>" +
+      participationListHtml(meeting) +
       "</ul>" +
       segmentsHtml +
       '<div class="site-footer">AI Meet - mhkarami97.ir</div>' +
