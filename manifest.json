@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "AI Meet",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "default_locale": "fa",
   "description": "__MSG_extDescription__",
   "permissions": [
