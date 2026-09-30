@@ -17,7 +17,7 @@ var DEFAULTS = Object.freeze({
   ],
   activeProviderId: 'manual-default',
   defaultTemplateId: 'general-technical',
-  languageMode: 'auto',
+  languageMode: 'manual',
   defaultLanguage: 'fa',
   includeFullTranscript: false,
   hideCaptionsUi: false,

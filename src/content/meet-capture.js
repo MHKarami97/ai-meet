@@ -122,34 +122,211 @@ function disableCaptions() {
 }
 
 async function trySetCaptionLanguage(languageCode) {
-  const wantedNames = LANGUAGE_DISPLAY_NAMES[languageCode];
-  if (!wantedNames) return;
+  var LANGUAGE_TRIGGER_KEYWORDS = [
+    "language of the meeting",
+    "meeting language",
+    "caption language",
+    "language",
+    "زبان",
+  ];
+  var LANGUAGE_OPTION_SELECTOR =
+    '[role="option"], [role="menuitemradio"], [role="menuitem"], li[data-value]';
+  var LANGUAGE_MATCH_NAMES = {
+    fa: ["persian", "farsi", "فارسی", "persisch"],
+    en: ["english", "انگلیسی", "englisch"],
+    ar: ["arabic", "عربی", "arabisch"],
+  };
 
-  try {
-    await sleep(600);
-    const languageBtn = findButtonByLabelKeywords(CAPTION_LANGUAGE_KEYWORDS);
-    if (!languageBtn) return;
-    languageBtn.click();
+  function waitFor(probe, timeoutMs, intervalMs) {
+    return new Promise(function (resolve) {
+      var startedAt = Date.now();
+      var timer = setInterval(function () {
+        var result = probe();
+        if (result || Date.now() - startedAt >= timeoutMs) {
+          clearInterval(timer);
+          resolve(result || null);
+        }
+      }, intervalMs);
+    });
+  }
 
-    await sleep(400);
-    const menu = document.querySelector('[role="listbox"], [role="menu"]');
-    if (!menu) return;
-    const options = Array.from(
-      menu.querySelectorAll(
-        '[role="option"], [role="menuitemradio"], [role="menuitem"]',
-      ),
+  class CaptionLanguageSelector {
+    constructor(languageCode) {
+      this.languageCode = languageCode;
+      this.names = LANGUAGE_MATCH_NAMES[languageCode] || [];
+    }
+
+    async select() {
+      if (this.names.length === 0) return false;
+
+      var panelReady = await waitFor(isCaptionsPanelVisible, 5000, 200);
+      if (!panelReady) return this.fail("captions panel not visible");
+
+      var trigger = await waitFor(() => this.findTrigger(), 4000, 200);
+      if (!trigger) return this.fail("language trigger not found");
+      if (this.matchesWanted(trigger)) return true;
+
+      trigger.click();
+      var option = await waitFor(() => this.findOption(), 3000, 150);
+      if (!option) return this.fail("language option not found");
+
+      option.click();
+      var applyButton = await waitFor(
+        () => findButtonByLabelKeywords(["apply"]),
+        1500,
+        150,
+      );
+      if (applyButton) applyButton.click();
+      return true;
+    }
+
+    findTrigger() {
+      var candidates = Array.from(
+        document.querySelectorAll('button, [role="combobox"], [role="button"]'),
+      );
+      return candidates.find((el) => this.isLanguageTrigger(el)) || null;
+    }
+
+    isLanguageTrigger(el) {
+      var label = (
+        (el.getAttribute("aria-label") || "") +
+        " " +
+        (el.textContent || "")
+      ).toLowerCase();
+      var isToggle =
+        label.includes("turn on captions") ||
+        label.includes("turn off captions");
+      if (isToggle) return false;
+      return LANGUAGE_TRIGGER_KEYWORDS.some((keyword) =>
+        label.includes(keyword),
+      );
+    }
+
+    matchesWanted(el) {
+      var text = (el.textContent || "").toLowerCase();
+      return this.names.some((name) => text.includes(name));
+    }
+
+    findOption() {
+      var options = Array.from(
+        document.querySelectorAll(LANGUAGE_OPTION_SELECTOR),
+      );
+      return (
+        options.find((opt) => {
+          var dataValue = (opt.getAttribute("data-value") || "").toLowerCase();
+          return (
+            dataValue.startsWith(this.languageCode) || this.matchesWanted(opt)
+          );
+        }) || null
+      );
+    }
+
+    fail(reason) {
+      console.warn("[AI Meet] caption language not set:", reason);
+      return false;
+    }
+  }
+}
+
+var LANGUAGE_TRIGGER_KEYWORDS = [
+  "language of the meeting",
+  "meeting language",
+  "caption language",
+  "language",
+  "زبان",
+];
+var LANGUAGE_OPTION_SELECTOR =
+  '[role="option"], [role="menuitemradio"], [role="menuitem"], li[data-value]';
+var LANGUAGE_MATCH_NAMES = {
+  fa: ["persian", "farsi", "فارسی", "persisch"],
+  en: ["english", "انگلیسی", "englisch"],
+  ar: ["arabic", "عربی", "arabisch"],
+};
+
+function waitFor(probe, timeoutMs, intervalMs) {
+  return new Promise(function (resolve) {
+    var startedAt = Date.now();
+    var timer = setInterval(function () {
+      var result = probe();
+      if (result || Date.now() - startedAt >= timeoutMs) {
+        clearInterval(timer);
+        resolve(result || null);
+      }
+    }, intervalMs);
+  });
+}
+
+class CaptionLanguageSelector {
+  constructor(languageCode) {
+    this.languageCode = languageCode;
+    this.names = LANGUAGE_MATCH_NAMES[languageCode] || [];
+  }
+
+  async select() {
+    if (this.names.length === 0) return false;
+
+    var panelReady = await waitFor(isCaptionsPanelVisible, 5000, 200);
+    if (!panelReady) return this.fail("captions panel not visible");
+
+    var trigger = await waitFor(() => this.findTrigger(), 4000, 200);
+    if (!trigger) return this.fail("language trigger not found");
+    if (this.matchesWanted(trigger)) return true;
+
+    trigger.click();
+    var option = await waitFor(() => this.findOption(), 3000, 150);
+    if (!option) return this.fail("language option not found");
+
+    option.click();
+    var applyButton = await waitFor(
+      () => findButtonByLabelKeywords(["apply"]),
+      1500,
+      150,
     );
-    const match = options.find((opt) =>
-      wantedNames.some((name) => opt.textContent.trim().includes(name)),
-    );
-    if (!match) return;
-    match.click();
+    if (applyButton) applyButton.click();
+    return true;
+  }
 
-    await sleep(300);
-    const applyBtn = findButtonByLabelKeywords(["apply", "اعمال"]);
-    applyBtn?.click();
-  } catch {
-    // Silently ignored: this feature is best-effort only.
+  findTrigger() {
+    var candidates = Array.from(
+      document.querySelectorAll('button, [role="combobox"], [role="button"]'),
+    );
+    return candidates.find((el) => this.isLanguageTrigger(el)) || null;
+  }
+
+  isLanguageTrigger(el) {
+    var label = (
+      (el.getAttribute("aria-label") || "") +
+      " " +
+      (el.textContent || "")
+    ).toLowerCase();
+    var isToggle =
+      label.includes("turn on captions") || label.includes("turn off captions");
+    if (isToggle) return false;
+    return LANGUAGE_TRIGGER_KEYWORDS.some((keyword) => label.includes(keyword));
+  }
+
+  matchesWanted(el) {
+    var text = (el.textContent || "").toLowerCase();
+    return this.names.some((name) => text.includes(name));
+  }
+
+  findOption() {
+    var options = Array.from(
+      document.querySelectorAll(LANGUAGE_OPTION_SELECTOR),
+    );
+    return (
+      options.find((opt) => {
+        var dataValue = (opt.getAttribute("data-value") || "").toLowerCase();
+        return (
+          dataValue.startsWith(this.languageCode) || this.matchesWanted(opt)
+        );
+      }) || null
+    );
+  }
+
+  fail(reason) {
+    console.warn("[AI Meet] caption language not set:", reason);
+    return false;
   }
 }
 
@@ -198,12 +375,14 @@ class MeetCaptionCapture {
 
   async start() {
     if (this.isRecording) return;
-    const settings = await this.getSettings();
-    const meeting = await this.sendMessage("meeting:start", {
+
+    var settings = await this.getSettings();
+    var meeting = await this.sendMessage("meeting:start", {
       meetUrl: location.href,
       language:
         settings.languageMode === "manual" ? settings.defaultLanguage : "auto",
     });
+
     this.meetingId = meeting.id;
     this.isRecording = true;
     this.lastLineText = "";
@@ -214,9 +393,8 @@ class MeetCaptionCapture {
 
     enableCaptions();
     if (settings.languageMode === "manual") {
-      trySetCaptionLanguage(settings.defaultLanguage);
+      await new CaptionLanguageSelector(settings.defaultLanguage).select();
     }
-
     this.attachObserver();
   }
 
@@ -377,7 +555,7 @@ class MeetCaptionCapture {
     const stored = await chrome.storage.local.get("settings");
     return (
       stored.settings || {
-        languageMode: "auto",
+        languageMode: "manual",
         defaultLanguage: "fa",
         hideCaptionsUi: false,
       }
