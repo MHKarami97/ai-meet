@@ -31,12 +31,12 @@ const BADGE_TEXT = {
   fa: {
     stopped: "AI Meet (برای شروع ضبط کلیک کنید)",
     recording: "پایان ضبط",
-    paused: '<span class="dot"></span> توقف موقت',
+    paused: '<span class="dot"></span> پایان ضبط',
   },
   en: {
     stopped: "AI Meet (Click to start recording)",
     recording: "Stop Recording",
-    paused: '<span class="dot"></span> Paused',
+    paused: '<span class="dot"></span> Stop Recording',
   },
 };
 
@@ -373,6 +373,8 @@ class MeetCaptionCapture {
     this.resumeBaseline = "";
     this.dockEl = null;
     this.pauseBtnEl = null;
+    this.hiddenMainOriginalStyle = "";
+    this.hiddenMainEl = null;
   }
 
   async init() {
@@ -439,8 +441,15 @@ class MeetCaptionCapture {
     this.updateBadge();
     this.restoreCaptionsUiVisibility();
     disableCaptions();
-    if (this.meetingId)
-      await this.sendMessage("meeting:end", { meetingId: this.meetingId });
+    if (this.meetingId) {
+      try {
+        await this.sendMessage("meeting:end", { meetingId: this.meetingId });
+      } catch (e) {}
+    }
+  }
+
+  findMainBox() {
+    return document.querySelector('main[jscontroller="izfDQc"]') || null;
   }
 
   toggle() {
@@ -458,12 +467,7 @@ class MeetCaptionCapture {
     this.isPaused = true;
     this.currentSegmentId = null;
 
-    const container = CAPTION_CONTAINER_SELECTORS.map((sel) =>
-      document.querySelector(sel),
-    ).find(Boolean);
-    if (container) {
-      this.applyCaptionsUiVisibility(container);
-    }
+    this.applyCaptionsUiVisibility();
 
     this.updateBadge();
   }
@@ -521,44 +525,83 @@ class MeetCaptionCapture {
     });
   }
 
+  findCaptionBox() {
+    return (
+      Array.from(
+        document.querySelectorAll('div[data-side="3"][data-priority="999"]'),
+      ).find((el) => {
+        const style = el.getAttribute("style") || "";
+        const hasBottom80 = /bottom\s*:\s*80px/.test(style);
+        const hasCaptionChild =
+          el.querySelector(".a4cQT") ||
+          el.querySelector('[aria-label*="caption" i]') ||
+          el.querySelector('[aria-label="Captions"]');
+        return hasBottom80 && hasCaptionChild;
+      }) || null
+    );
+  }
+
   applyCaptionsUiVisibility(container) {
-    if (!this.hideCaptionsUi || !container) return;
-    this.hiddenCaptionContainer = container;
+    if (!this.hideCaptionsUi && !this.isPaused) {
+      this.restoreCaptionsUiVisibility();
+      return;
+    }
 
-    this.hiddenCaptionOriginalDisplay = container.style.display || "";
-    this.hiddenCaptionOriginalPosition = container.style.position || "";
-    this.hiddenCaptionOriginalZIndex = container.style.zIndex || "";
-    this.hiddenCaptionOriginalOpacity = container.style.opacity || "";
-    this.hiddenCaptionOriginalPointerEvents =
-      container.style.pointerEvents || "";
+    const box = container || this.findCaptionBox();
+    const mainEl = this.findMainBox();
 
-    container.style.opacity = "0";
-    container.style.pointerEvents = "none";
-    container.style.position = "fixed";
-    container.style.zIndex = "-1";
-    container.style.top = "0";
-    container.style.left = "0";
-    container.style.width = "1px";
-    container.style.height = "1px";
-    container.style.overflow = "hidden";
+    if (box) {
+      this.hiddenCaptionContainer = box;
+      this.hiddenCaptionOriginalDisplay = box.style.display || "";
+      this.hiddenCaptionOriginalPosition = box.style.position || "";
+      this.hiddenCaptionOriginalZIndex = box.style.zIndex || "";
+      this.hiddenCaptionOriginalOpacity = box.style.opacity || "";
+      this.hiddenCaptionOriginalPointerEvents = box.style.pointerEvents || "";
+
+      box.style.opacity = "0";
+      box.style.pointerEvents = "none";
+      box.style.position = "fixed";
+      box.style.zIndex = "-1";
+      box.style.top = "0";
+      box.style.left = "0";
+      box.style.width = "1px";
+      box.style.height = "1px";
+      box.style.overflow = "hidden";
+    }
+
+    if (mainEl) {
+      this.hiddenMainEl = mainEl;
+      this.hiddenMainOriginalStyle = mainEl.getAttribute("style") || "";
+    }
   }
 
   restoreCaptionsUiVisibility() {
-    if (this.hiddenCaptionContainer) {
-      const container = this.hiddenCaptionContainer;
-      container.style.opacity = this.hiddenCaptionOriginalOpacity || "";
-      container.style.pointerEvents =
-        this.hiddenCaptionOriginalPointerEvents || "";
-      container.style.position = this.hiddenCaptionOriginalPosition || "";
-      container.style.zIndex = this.hiddenCaptionOriginalZIndex || "";
-      container.style.top = "";
-      container.style.left = "";
-      container.style.width = "";
-      container.style.height = "";
-      container.style.overflow = "";
-      container.style.display = this.hiddenCaptionOriginalDisplay || "";
-      this.hiddenCaptionContainer = null;
+    if (this.hiddenMainEl) {
+      const mainEl = this.hiddenMainEl;
+      if (this.hiddenMainOriginalStyle) {
+        mainEl.setAttribute("style", this.hiddenMainOriginalStyle);
+      } else {
+        mainEl.removeAttribute("style");
+      }
+      this.hiddenMainEl = null;
+      this.hiddenMainOriginalStyle = "";
     }
+
+    if (!this.hiddenCaptionContainer) return;
+    const box = this.hiddenCaptionContainer;
+
+    box.style.opacity = this.hiddenCaptionOriginalOpacity || "";
+    box.style.pointerEvents = this.hiddenCaptionOriginalPointerEvents || "";
+    box.style.position = this.hiddenCaptionOriginalPosition || "";
+    box.style.zIndex = this.hiddenCaptionOriginalZIndex || "";
+    box.style.top = "";
+    box.style.left = "";
+    box.style.width = "";
+    box.style.height = "";
+    box.style.overflow = "";
+    box.style.display = this.hiddenCaptionOriginalDisplay || "";
+
+    this.hiddenCaptionContainer = null;
   }
 
   onCaptionsMutated(container) {
@@ -665,7 +708,11 @@ class MeetCaptionCapture {
   }
 
   sendMessage(type, payload) {
-    return chrome.runtime.sendMessage({ type, payload });
+    try {
+      return chrome.runtime.sendMessage({ type, payload });
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
 }
 
