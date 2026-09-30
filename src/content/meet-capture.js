@@ -12,13 +12,6 @@ const NON_CAPTION_TEXT_BLOCKLIST = [
   "turn on captions",
   "turn off captions",
 ];
-const CAPTION_TOGGLE_KEYWORDS = ["caption", "زیرنویس"];
-const CAPTION_LANGUAGE_KEYWORDS = ["caption language", "زبان زیرنویس"];
-const LANGUAGE_DISPLAY_NAMES = {
-  fa: ["فارسی", "Persian", "Farsi"],
-  en: ["English"],
-  ar: ["العربية", "Arabic"],
-};
 
 var PAUSE_BUTTON_TEXT = {
   fa: { pause: "توقف موقت", resume: "ادامه ضبط" },
@@ -110,10 +103,6 @@ function findCaptionToggleButton() {
   });
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function enableCaptions() {
   if (isCaptionsPanelVisible()) return true;
   const btn = findCaptionToggleButton();
@@ -126,113 +115,6 @@ function disableCaptions() {
   if (!isCaptionsPanelVisible()) return;
   const btn = findCaptionToggleButton();
   if (btn) btn.click();
-}
-
-async function trySetCaptionLanguage(languageCode) {
-  var LANGUAGE_TRIGGER_KEYWORDS = [
-    "language of the meeting",
-    "meeting language",
-    "caption language",
-    "language",
-    "زبان",
-  ];
-  var LANGUAGE_OPTION_SELECTOR =
-    '[role="option"], [role="menuitemradio"], [role="menuitem"], li[data-value]';
-  var LANGUAGE_MATCH_NAMES = {
-    fa: ["persian", "farsi", "فارسی", "persisch"],
-    en: ["english", "انگلیسی", "englisch"],
-    ar: ["arabic", "عربی", "arabisch"],
-  };
-
-  function waitFor(probe, timeoutMs, intervalMs) {
-    return new Promise(function (resolve) {
-      var startedAt = Date.now();
-      var timer = setInterval(function () {
-        var result = probe();
-        if (result || Date.now() - startedAt >= timeoutMs) {
-          clearInterval(timer);
-          resolve(result || null);
-        }
-      }, intervalMs);
-    });
-  }
-
-  class CaptionLanguageSelector {
-    constructor(languageCode) {
-      this.languageCode = languageCode;
-      this.names = LANGUAGE_MATCH_NAMES[languageCode] || [];
-    }
-
-    async select() {
-      if (this.names.length === 0) return false;
-
-      var panelReady = await waitFor(isCaptionsPanelVisible, 5000, 200);
-      if (!panelReady) return this.fail("captions panel not visible");
-
-      var trigger = await waitFor(() => this.findTrigger(), 4000, 200);
-      if (!trigger) return this.fail("language trigger not found");
-      if (this.matchesWanted(trigger)) return true;
-
-      trigger.click();
-      var option = await waitFor(() => this.findOption(), 3000, 150);
-      if (!option) return this.fail("language option not found");
-
-      option.click();
-      var applyButton = await waitFor(
-        () => findButtonByLabelKeywords(["apply"]),
-        1500,
-        150,
-      );
-      if (applyButton) applyButton.click();
-      return true;
-    }
-
-    findTrigger() {
-      var candidates = Array.from(
-        document.querySelectorAll('button, [role="combobox"], [role="button"]'),
-      );
-      return candidates.find((el) => this.isLanguageTrigger(el)) || null;
-    }
-
-    isLanguageTrigger(el) {
-      var label = (
-        (el.getAttribute("aria-label") || "") +
-        " " +
-        (el.textContent || "")
-      ).toLowerCase();
-      var isToggle =
-        label.includes("turn on captions") ||
-        label.includes("turn off captions");
-      if (isToggle) return false;
-      return LANGUAGE_TRIGGER_KEYWORDS.some((keyword) =>
-        label.includes(keyword),
-      );
-    }
-
-    matchesWanted(el) {
-      var text = (el.textContent || "").toLowerCase();
-      return this.names.some((name) => text.includes(name));
-    }
-
-    findOption() {
-      var options = Array.from(
-        document.querySelectorAll(LANGUAGE_OPTION_SELECTOR),
-      );
-      return (
-        options.find((opt) => {
-          var dataValue = (opt.getAttribute("data-value") || "").toLowerCase();
-          return (
-            dataValue.startsWith(this.languageCode) || this.matchesWanted(opt)
-          );
-        }) || null
-      );
-    }
-
-    fail(reason) {
-      console.warn("[AI Meet] caption language not set:", reason);
-      return false;
-    }
-  }
 }
 
 var LANGUAGE_TRIGGER_KEYWORDS = [
@@ -359,6 +241,8 @@ class MeetCaptionCapture {
     this.meetingId = null;
     this.observer = null;
     this.rootObserver = null;
+    this.observedContainer = null;
+    this.syncScheduled = false;
     this.lastLineText = "";
     this.lastSpeaker = "ناشناس";
     this.currentSegmentId = null;
@@ -373,8 +257,10 @@ class MeetCaptionCapture {
     this.resumeBaseline = "";
     this.dockEl = null;
     this.pauseBtnEl = null;
-    this.hiddenMainOriginalStyle = "";
-    this.hiddenMainEl = null;
+    this.mainEl = null;
+    this.mainObserver = null;
+    this.mainOriginalInset = null;
+    this.mainGoogleInset = null;
   }
 
   async init() {
@@ -423,6 +309,7 @@ class MeetCaptionCapture {
     this.hideCaptionsUi = settings.hideCaptionsUi === true;
     this.updateBadge();
 
+    this.rememberMainLayout();
     enableCaptions();
     if (settings.languageMode === "manual") {
       await new CaptionLanguageSelector(settings.defaultLanguage).select();
@@ -434,6 +321,9 @@ class MeetCaptionCapture {
     if (!this.isRecording) return;
     this.observer?.disconnect();
     this.rootObserver?.disconnect();
+    this.observer = null;
+    this.rootObserver = null;
+    this.observedContainer = null;
     this.isRecording = false;
     this.isPaused = false;
     this.resumeBaseline = "";
@@ -467,7 +357,7 @@ class MeetCaptionCapture {
     this.isPaused = true;
     this.currentSegmentId = null;
 
-    this.applyCaptionsUiVisibility();
+    this.refreshCaptionsVisibility(findCaptionContainer());
 
     this.updateBadge();
   }
@@ -479,7 +369,7 @@ class MeetCaptionCapture {
     this.currentSegmentId = null;
     this.isPaused = false;
 
-    this.restoreCaptionsUiVisibility();
+    this.refreshCaptionsVisibility(findCaptionContainer());
 
     this.updateBadge();
   }
@@ -495,33 +385,52 @@ class MeetCaptionCapture {
   }
 
   attachObserver() {
-    const tryAttach = () => {
-      const container = CAPTION_CONTAINER_SELECTORS.map((sel) =>
-        document.querySelector(sel),
-      ).find(Boolean);
-      if (!container) return false;
+    this.syncObserver();
 
-      this.applyCaptionsUiVisibility(container);
-
-      this.observer = new MutationObserver(() =>
-        this.onCaptionsMutated(container),
-      );
-      this.observer.observe(container, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-      return true;
-    };
-
-    if (tryAttach()) return;
-
-    this.rootObserver = new MutationObserver(() => {
-      if (tryAttach()) this.rootObserver.disconnect();
-    });
+    this.rootObserver?.disconnect();
+    this.rootObserver = new MutationObserver(() => this.scheduleObserverSync());
     this.rootObserver.observe(document.body, {
       childList: true,
       subtree: true,
+    });
+  }
+
+  scheduleObserverSync() {
+    if (this.syncScheduled) return;
+    this.syncScheduled = true;
+    requestAnimationFrame(() => {
+      this.syncScheduled = false;
+      if (this.isRecording) this.syncObserver();
+    });
+  }
+
+  syncObserver() {
+    var container = findCaptionContainer();
+    if (container === this.observedContainer) return;
+
+    this.observer?.disconnect();
+    this.observer = null;
+    this.observedContainer = container;
+    if (!container) return;
+
+    this.refreshCaptionsVisibility(container);
+
+    var currentText = readLastCaptionText();
+    if (
+      currentText &&
+      this.lastLineText &&
+      currentText.startsWith(this.lastLineText)
+    ) {
+      this.resumeBaseline = this.lastLineText;
+    }
+
+    this.observer = new MutationObserver(() =>
+      this.onCaptionsMutated(container),
+    );
+    this.observer.observe(container, {
+      childList: true,
+      subtree: true,
+      characterData: true,
     });
   }
 
@@ -541,17 +450,22 @@ class MeetCaptionCapture {
     );
   }
 
+  shouldHideCaptions() {
+    return this.hideCaptionsUi || this.isPaused;
+  }
+
+  refreshCaptionsVisibility(container) {
+    if (this.shouldHideCaptions()) this.applyCaptionsUiVisibility(container);
+    else this.restoreCaptionsUiVisibility();
+  }
+
   applyCaptionsUiVisibility(container) {
-    if (!this.hideCaptionsUi && !this.isPaused) {
-      this.restoreCaptionsUiVisibility();
-      return;
-    }
+    const box = this.findCaptionBox() || container;
 
-    const box = container || this.findCaptionBox();
-    const mainEl = this.findMainBox();
-
-    if (box) {
+    if (box && box !== this.hiddenCaptionContainer) {
+      this.restoreCaptionBox();
       this.hiddenCaptionContainer = box;
+
       this.hiddenCaptionOriginalDisplay = box.style.display || "";
       this.hiddenCaptionOriginalPosition = box.style.position || "";
       this.hiddenCaptionOriginalZIndex = box.style.zIndex || "";
@@ -569,24 +483,15 @@ class MeetCaptionCapture {
       box.style.overflow = "hidden";
     }
 
-    if (mainEl) {
-      this.hiddenMainEl = mainEl;
-      this.hiddenMainOriginalStyle = mainEl.getAttribute("style") || "";
-    }
+    this.lockMainLayout();
   }
 
   restoreCaptionsUiVisibility() {
-    if (this.hiddenMainEl) {
-      const mainEl = this.hiddenMainEl;
-      if (this.hiddenMainOriginalStyle) {
-        mainEl.setAttribute("style", this.hiddenMainOriginalStyle);
-      } else {
-        mainEl.removeAttribute("style");
-      }
-      this.hiddenMainEl = null;
-      this.hiddenMainOriginalStyle = "";
-    }
+    this.restoreCaptionBox();
+    this.unlockMainLayout();
+  }
 
+  restoreCaptionBox() {
     if (!this.hiddenCaptionContainer) return;
     const box = this.hiddenCaptionContainer;
 
@@ -602,6 +507,51 @@ class MeetCaptionCapture {
     box.style.display = this.hiddenCaptionOriginalDisplay || "";
 
     this.hiddenCaptionContainer = null;
+  }
+
+  rememberMainLayout() {
+    const main = this.findMainBox();
+    this.mainOriginalInset =
+      main && !isCaptionsPanelVisible() ? main.style.inset : null;
+  }
+
+  lockMainLayout() {
+    const main = this.findMainBox();
+    if (!main || this.mainOriginalInset === null) return;
+
+    if (this.mainEl !== main || !this.mainObserver) {
+      this.mainObserver?.disconnect();
+      this.mainEl = main;
+      this.mainObserver = new MutationObserver(() => this.enforceMainInset());
+      this.mainObserver.observe(main, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
+    }
+    this.enforceMainInset();
+  }
+
+  enforceMainInset() {
+    const main = this.mainEl;
+    if (!main || this.mainOriginalInset === null) return;
+
+    if (main.style.inset === this.mainOriginalInset) {
+      this.mainGoogleInset = null;
+      return;
+    }
+    this.mainGoogleInset = main.style.inset;
+    main.style.inset = this.mainOriginalInset;
+    this.mainObserver?.takeRecords();
+  }
+
+  unlockMainLayout() {
+    this.mainObserver?.disconnect();
+    this.mainObserver = null;
+    if (this.mainEl && this.mainGoogleInset !== null) {
+      this.mainEl.style.inset = this.mainGoogleInset;
+    }
+    this.mainEl = null;
+    this.mainGoogleInset = null;
   }
 
   onCaptionsMutated(container) {

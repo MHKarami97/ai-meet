@@ -368,7 +368,7 @@ export class PdfExporter extends BaseExporter {
     var printWindow = window.open(blobUrl, "_blank");
     if (!printWindow) return;
     printWindow.addEventListener("load", function () {
-      printWindow.document.title = "mhkarami97.ir - " + meeting.title;
+      printWindow.document.title = meeting.title;
       printWindow.focus();
       printWindow.print();
     });
