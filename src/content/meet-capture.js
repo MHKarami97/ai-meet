@@ -20,16 +20,23 @@ const LANGUAGE_DISPLAY_NAMES = {
   ar: ["العربية", "Arabic"],
 };
 
+var PAUSE_BUTTON_TEXT = {
+  fa: { pause: "توقف موقت", resume: "ادامه ضبط" },
+  en: { pause: "Pause", resume: "Resume" },
+};
+
 const CONTINUATION_GAP_MS = 7000;
 
 const BADGE_TEXT = {
   fa: {
-    stopped: "AI Meet - برای شروع ضبط کلیک کنید",
-    recording: "AI Meet در حال ضبط - کلیک برای پایان",
+    stopped: "AI Meet (برای شروع ضبط کلیک کنید)",
+    recording: "پایان ضبط",
+    paused: '<span class="dot"></span> توقف موقت',
   },
   en: {
-    stopped: "AI Meet - Click to start recording",
-    recording: "AI Meet recording - Click to stop",
+    stopped: "AI Meet (Click to start recording)",
+    recording: "Stop Recording",
+    paused: '<span class="dot"></span> Paused',
   },
 };
 
@@ -330,6 +337,23 @@ class CaptionLanguageSelector {
   }
 }
 
+function findCaptionContainer() {
+  return (
+    CAPTION_CONTAINER_SELECTORS.map((selector) =>
+      document.querySelector(selector),
+    ).find(Boolean) || null
+  );
+}
+
+function readLastCaptionText() {
+  var container = findCaptionContainer();
+  if (!container) return "";
+  var lines = Array.from(container.querySelectorAll("div, span")).filter(
+    isRealCaptionLine,
+  );
+  return lines.length > 0 ? lines[lines.length - 1].textContent.trim() : "";
+}
+
 class MeetCaptionCapture {
   constructor() {
     this.meetingId = null;
@@ -345,6 +369,10 @@ class MeetCaptionCapture {
     this.hiddenCaptionContainer = null;
     this.hiddenCaptionOriginalDisplay = "";
     this.uiLanguage = "fa";
+    this.isPaused = false;
+    this.resumeBaseline = "";
+    this.dockEl = null;
+    this.pauseBtnEl = null;
   }
 
   async init() {
@@ -385,6 +413,8 @@ class MeetCaptionCapture {
 
     this.meetingId = meeting.id;
     this.isRecording = true;
+    this.isPaused = false;
+    this.resumeBaseline = "";
     this.lastLineText = "";
     this.currentSegmentId = null;
     this.lastUpdateAt = 0;
@@ -403,6 +433,8 @@ class MeetCaptionCapture {
     this.observer?.disconnect();
     this.rootObserver?.disconnect();
     this.isRecording = false;
+    this.isPaused = false;
+    this.resumeBaseline = "";
     this.currentSegmentId = null;
     this.updateBadge();
     this.restoreCaptionsUiVisibility();
@@ -414,6 +446,48 @@ class MeetCaptionCapture {
   toggle() {
     if (this.isRecording) this.stop();
     else this.start();
+  }
+
+  togglePause() {
+    if (this.isPaused) this.resume();
+    else this.pause();
+  }
+
+  pause() {
+    if (!this.isRecording || this.isPaused) return;
+    this.isPaused = true;
+    this.currentSegmentId = null;
+
+    const container = CAPTION_CONTAINER_SELECTORS.map((sel) =>
+      document.querySelector(sel),
+    ).find(Boolean);
+    if (container) {
+      this.applyCaptionsUiVisibility(container);
+    }
+
+    this.updateBadge();
+  }
+
+  resume() {
+    if (!this.isRecording || !this.isPaused) return;
+    this.resumeBaseline = readLastCaptionText();
+    this.lastLineText = this.resumeBaseline;
+    this.currentSegmentId = null;
+    this.isPaused = false;
+
+    this.restoreCaptionsUiVisibility();
+
+    this.updateBadge();
+  }
+
+  stripResumeBaseline(text) {
+    if (!this.resumeBaseline) return text;
+    if (text === this.resumeBaseline) return "";
+    if (text.startsWith(this.resumeBaseline)) {
+      return text.slice(this.resumeBaseline.length).trim();
+    }
+    this.resumeBaseline = "";
+    return text;
   }
 
   attachObserver() {
@@ -488,14 +562,17 @@ class MeetCaptionCapture {
   }
 
   onCaptionsMutated(container) {
-    if (!this.isRecording) return;
+    if (!this.isRecording || this.isPaused) return;
     const lines = Array.from(container.querySelectorAll("div, span")).filter(
       isRealCaptionLine,
     );
     if (lines.length === 0) return;
 
     const lastEl = lines[lines.length - 1];
-    const text = lastEl.textContent.trim();
+    var text = lastEl.textContent.trim();
+    if (!text) return;
+
+    text = this.stripResumeBaseline(text);
     if (!text || text === this.lastLineText) return;
 
     const detectedSpeaker = findSpeakerForLine(container, lastEl);
@@ -529,26 +606,51 @@ class MeetCaptionCapture {
   }
 
   renderBadge() {
+    this.dockEl = document.createElement("div");
+    this.dockEl.className = "ai-meet-dock";
+
     this.badgeEl = document.createElement("button");
     this.badgeEl.type = "button";
     this.badgeEl.className = "ai-meet-badge stopped";
-    this.badgeEl.innerHTML = BADGE_TEXT[this.uiLanguage].stopped;
     this.badgeEl.addEventListener("click", () => {
       if (!this.isRecording) {
         chrome.runtime.sendMessage({ type: "sidepanel:open" }).catch(() => {});
       }
       this.toggle();
     });
-    document.body.appendChild(this.badgeEl);
+
+    this.pauseBtnEl = document.createElement("button");
+    this.pauseBtnEl.type = "button";
+    this.pauseBtnEl.className = "ai-meet-pause";
+    this.pauseBtnEl.hidden = true;
+    this.pauseBtnEl.addEventListener("click", () => this.togglePause());
+
+    this.dockEl.append(this.badgeEl, this.pauseBtnEl);
+    document.body.appendChild(this.dockEl);
     window.addEventListener("beforeunload", () => this.stop());
+    this.updateBadge();
   }
 
   updateBadge() {
     if (!this.badgeEl) return;
-    this.badgeEl.classList.toggle("stopped", !this.isRecording);
-    this.badgeEl.innerHTML = this.isRecording
-      ? BADGE_TEXT[this.uiLanguage].recording
-      : BADGE_TEXT[this.uiLanguage].stopped;
+
+    var state = !this.isRecording
+      ? "stopped"
+      : this.isPaused
+        ? "paused"
+        : "recording";
+    var texts = BADGE_TEXT[this.uiLanguage] || BADGE_TEXT.fa;
+    var buttonTexts =
+      PAUSE_BUTTON_TEXT[this.uiLanguage] || PAUSE_BUTTON_TEXT.fa;
+
+    this.badgeEl.classList.toggle("stopped", state === "stopped");
+    this.badgeEl.classList.toggle("paused", state === "paused");
+    this.badgeEl.innerHTML = texts[state];
+
+    this.pauseBtnEl.hidden = !this.isRecording;
+    this.pauseBtnEl.textContent = this.isPaused
+      ? buttonTexts.resume
+      : buttonTexts.pause;
   }
 
   async getSettings() {
