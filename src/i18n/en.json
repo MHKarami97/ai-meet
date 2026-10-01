@@ -72,6 +72,7 @@
 
   "sidepanel_toggle_list_title": "Show/hide meeting list",
   "sidepanel_open_options_title": "Settings",
+  "sidepanel_open_help_title": "Help",
   "sidepanel_search_placeholder": "Search meetings...",
   "sidepanel_empty_state": "No meeting recorded yet. Join a Google Meet call to start automatic recording.",
   "sidepanel_manual_modal_title": "Manual summarization",

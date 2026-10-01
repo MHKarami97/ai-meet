@@ -9,7 +9,6 @@ function providerTypeLabel(type) {
   var key = {
     [PROVIDER_TYPES.GEMINI]: "provider_type_gemini",
     [PROVIDER_TYPES.OPENAI_COMPATIBLE]: "provider_type_openai_compatible",
-    [PROVIDER_TYPES.CLOUDFLARE_GEMINI]: "provider_type_cloudflare_gemini",
     [PROVIDER_TYPES.MANUAL]: "provider_type_manual",
   }[type];
   return key ? i18n.t(key) : type;

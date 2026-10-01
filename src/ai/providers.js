@@ -138,7 +138,6 @@ export class ManualCopyPasteProvider extends ManualProviderMarker {}
 
 export const PROVIDER_TYPES = Object.freeze({
   GEMINI: "gemini",
-  CLOUDFLARE_GEMINI: "cloudflare-gemini",
   OPENAI_COMPATIBLE: "openai-compatible",
   MANUAL: "manual",
 });

@@ -52,6 +52,11 @@ class SidePanelApp {
       .getElementById("openOptionsBtn")
       .addEventListener("click", () => chrome.runtime.openOptionsPage());
     document
+      .getElementById("openHelpBtn")
+      .addEventListener("click", () => {
+        window.open("https://blog.mhkarami97.ir/posts/ai-meet/", "_blank");
+      });
+    document
       .getElementById("toggleListBtn")
       .addEventListener("click", () => this.toggleListCollapse());
     document
